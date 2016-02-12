@@ -1,0 +1,17 @@
+Wordpress:
+http://wptavern.com/how-to-extend-a-wordpress-plugin-without-losing-your-changes ('How To Extend A WordPress Plugin Without Losing Your Changes')
+https://www.smashingmagazine.com/2012/08/how-to-become-a-top-wordpress-developer ('How To Become A Top WordPress Developer')
+https://iandunn.name/the-right-way-to-customize-a-wordpress-plugin/              ('The Right Way to Customize a WordPress Plugin')
+https://wordpress.org/plugins/google-authenticator-encourage-user-activation/    ('Google Authenticator - Encourage User Activation')
+
+https://developer.wordpress.org/plugins/hooks/creating-custom-hooks/            (Creating Custom Hooks)
+https://developer.wordpress.org/plugins/hooks/actions/                          (Actions)
+
+
+
+Event Tickets 
+https://theeventscalendar.com/support/forums/topic/moving-the-rsvp-section-to-the-top/
+
+На русском:
+http://wp-kama.ru/hooks
+http://wpblogs.ru/wordpress-hooks/

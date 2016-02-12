@@ -76,37 +76,40 @@ class Tribe__Tickets__Main__Extend {
         // load_plugin_textdomain( 'event-tickets', false, $this->plugin_dir . 'lang/' );
 
         $this->hooks();
+        /**
+        * Move RSVP Tickets form in events template
+        */
+        // remove_action( 'tribe_events_single_event_after_the_meta', array( Tribe__Tickets__RSVP::get_instance(), 'front_end_tickets_form' ), 5 );
+        // add_action( 'tribe_events_single_event_before_the_content', array( Tribe__Tickets__RSVP__Extend::get_instance123(), 'front_end_tickets_form' ), 5 );
+        
         $this->has_initialized = true;
     }
 
-        public function hooks() {
-        add_action( 'render_attendees_table', array( $this, 'some_action' ) );
-        add_filter('the_title', array( $this, 'my_own_function_for_title' ));
-        // add_filter( 'the_title', function( $title ) { return $title . ' <- ModifiedTitle'; } );
-        // add_action( 'tribe_events_page_tickets-attendees', 'my_own_function_for_title' );
-        // add_action( 'add_meta_boxes', array( 'Tribe__Tickets__Metabox', 'maybe_add_meta_box' ) );
-        // add_action( 'admin_enqueue_scripts', array( 'Tribe__Tickets__Metabox', 'add_admin_scripts' ) );
-        // add_filter( 'tribe_post_types', array( $this, 'inject_post_types' ) );
-
-        // // Setup Help Tab texting
-        // add_action( 'tribe_help_pre_get_sections', array( $this, 'add_help_section_support_content' ) );
-        // add_action( 'tribe_help_pre_get_sections', array( $this, 'add_help_section_featured_content' ) );
-        // add_action( 'tribe_help_pre_get_sections', array( $this, 'add_help_section_extra_content' ) );
-        // add_action( 'plugins_loaded', array( 'Tribe__Support', 'getInstance' ) );
+    public function hooks() {
+        add_action( 'wp_insert_post', array( $this, 'add_custom_field_to_attendees' ), 10, 3 );
+        add_filter( 'manage_tribe_events_page_tickets-attendees_columns', array( $this, 'add_my_custom_attendee_column'), 20 );
+        add_filter( 'tribe_events_tickets_attendees_table_column', array( $this,'populate_my_custom_attendee_column'), 10, 3 );
     }
 
-    public function my_own_function_for_title( $title ){
-        // $attendees_page->
-        $title = strtolower($title . " <--This is Title!!!");
-        return $title;
+    public function add_custom_field_to_attendees( $post_id, $post, $update ) {
+        var_dump($_POST);die;
+        if (isset($_POST["attendee"])) {
+            $seats = empty( $_POST['attendee']['seats'] ) ? null : sanitize_text_field( $_POST['attendee']['seats'] );
+            update_post_meta( $post_id, 'seats', $seats);
+        }
     }
 
-    /**
-     * Hooked to the init action
-     */
-    public function some_action($arg) {
-        var_dump($arg);die();
-        return $arg;
+    public function add_my_custom_attendee_column( $columns ) {
+        $columns['seats'] = 'Seats';
+        return $columns;
+    }
+     
+    public function populate_my_custom_attendee_column( $existing, $item, $column ) {
+        if ($column == 'seats') {
+            $seats = get_post_meta( $item['attendee_id'], 'seats', true );
+            return esc_html($seats);
+        }
+        return $existing;
     }
 }
 ?>
