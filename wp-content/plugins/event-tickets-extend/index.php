@@ -92,8 +92,8 @@ class Tribe__Tickets__Main__Extend {
     add_menu_page(
         __('Test Toplevel','menu-test'),
         __('Test Toplevel','menu-test'),
-        'manage_options',
-        'tribe-common',
+        apply_filters( 'tribe_common_event_page_capability', 'manage_options' ),//'manage_options',
+        'event_seats_chart',
         null,
         'dashicons-tickets'
         // 'mt-top-level-handle', 
@@ -211,9 +211,15 @@ class Tribe__Tickets__Main__Extend {
 
         // load_plugin_textdomain( 'event-tickets', false, $this->plugin_dir . 'lang/' );
 
+        $this->init();
         $this->hooks();
         
         $this->has_initialized = true;
+    }
+
+    public function init() {
+        // $this->register_resources();
+        // $this->register_post_types();
     }
 
     public function hooks() {
@@ -223,7 +229,6 @@ class Tribe__Tickets__Main__Extend {
 
         add_filter( 'tribe_events_register_venue_type_args', array( $this,'tribe_venues_custom_field_support') );
         // add_action( 'tribe_events_single_venue_before_upcoming_events', array( $this,'show_wp_custom_fields') );
-        add_action('init', array( $this, 'register_post_types'));
     }
 
     public function add_custom_field_to_attendees( $post_id, $post, $update ) {
@@ -262,52 +267,35 @@ class Tribe__Tickets__Main__Extend {
 
     function register_post_types(){
         $args = array(
-            'label'  => null,
+            'label'           => 'Seats chart',
+            'public'          => true,
             'labels' => array(
-                'name'               => '', // основное название для типа записи
-                'singular_name'      => '', // название для одной записи этого типа
-                'add_new'            => '', // для добавления новой записи
-                'add_new_item'       => '', // заголовка у вновь создаваемой записи в админ-панели.
-                'edit_item'          => '', // для редактирования типа записи
-                'new_item'           => '', // текст новой записи
-                'view_item'          => '', // для просмотра записи этого типа.
-                'search_items'       => '', // для поиска по этим типам записи
-                'not_found'          => '', // если в результате поиска ничего не было найдено
-                'not_found_in_trash' => '', // если не было найдено в корзине
-                'parent_item_colon'  => '', // для родительских типов. для древовидных типов
-                'menu_name'          => '', // название меню
-            ),
-            'description'         => '',
-            'public'              => false,
-            'publicly_queryable'  => null,
-            'exclude_from_search' => null,
-            'show_ui'             => null,
-            'show_in_menu'        => null,
-            'menu_position'       => null,
-            'menu_icon'           => null, 
-            //'capability_type'   => 'post',
-            //'capabilities'      => 'post', // массив дополнительных прав для этого типа записи
-            //'map_meta_cap'      => null, // Ставим true чтобы включить дефолтный обработчик специальных прав
-            'hierarchical'        => false,
-            'supports'            => array('title','editor'),
-            'taxonomies'          => array(),
-            'has_archive'         => false,
-            'rewrite'             => true,
-            'query_var'           => true,
-            'show_in_nav_menus'   => null,
+                'name' => __( 'Charts' ),
+                'singular_name' => __( 'Chart' )
+              ),
+            // 'show_ui'         => false,
+            // 'show_in_menu'    => false,
+            // 'query_var'       => false,
+            // 'rewrite'         => false,
+            // 'capability_type' => 'post',
+            'has_archive'     => true,
+            'hierarchical'    => true,
         );
 
-        register_post_type('type_name', $args );
+        register_post_type('event_seats_chart', $args );
 
-        // register_post_type( self::ATTENDEE_OBJECT, array(
-        //     'label'           => 'Attendees',
-        //     'public'          => false,
-        //     'show_ui'         => false,
-        //     'show_in_menu'    => false,
-        //     'query_var'       => false,
-        //     'rewrite'         => false,
-        //     'capability_type' => 'post',
-        //     'has_archive'     => false,
-        //     'hierarchical'    => true,
-        // ) );
     }
+
+    // if ( post_type_exists( 'tribe_events' ) ) {
+    //     self::$parent_page = 'edit.php?post_type=tribe_events';
+    // } else {
+    //     add_menu_page(
+    //         esc_html__( 'Events', 'tribe-common' ),
+    //         esc_html__( 'Events', 'tribe-common' ),
+    //         apply_filters( 'tribe_common_event_page_capability', 'manage_options' ),
+    //         'tribe-common',
+    //         null,
+    //         'dashicons-calendar'
+    //     );
+    // }
+}
