@@ -92,9 +92,12 @@ class Tribe__Tickets__Main__Extend {
     add_menu_page(
         __('Test Toplevel','menu-test'),
         __('Test Toplevel','menu-test'),
-        'manage_options', 
-        'mt-top-level-handle', 
-        array($this, 'mt_toplevel_page')
+        'manage_options',
+        'tribe-common',
+        null,
+        'dashicons-tickets'
+        // 'mt-top-level-handle', 
+        // array($this, 'mt_toplevel_page')
     );
 
     // Add a submenu to the custom top-level menu:
@@ -123,9 +126,9 @@ class Tribe__Tickets__Main__Extend {
     }
 
     // mt_toplevel_page() displays the page content for the custom Test Toplevel menu
-    function mt_toplevel_page() {
-        echo "<h2>" . __( 'Test Toplevel', 'menu-test' ) . "</h2>";
-    }
+    // function mt_toplevel_page() {
+    //     echo "<h2>" . __( 'Test Toplevel', 'menu-test' ) . "</h2>";
+    // }
 
     // mt_sublevel_page() displays the page content for the first submenu
     // of the custom Test Toplevel menu
@@ -141,50 +144,38 @@ class Tribe__Tickets__Main__Extend {
 
 
 // mt_settings_page() displays the page content for the Test Settings submenu
-function mt_settings_page() {
+    function mt_settings_page() {
 
-    //must check that the user has the required capability 
-    if (!current_user_can('manage_options'))
-    {
-      wp_die( __('You do not have sufficient permissions to access this page.') );
-    }
+        //must check that the user has the required capability 
+        if (!current_user_can('manage_options'))
+        {
+          wp_die( __('You do not have sufficient permissions to access this page.') );
+        }
 
-    // variables for the field and option names 
-    $opt_name = 'mt_favorite_color';
-    $hidden_field_name = 'mt_submit_hidden';
-    $data_field_name = 'mt_favorite_color';
+        // variables for the field and option names 
+        $opt_name = 'mt_favorite_color';
+        $hidden_field_name = 'mt_submit_hidden';
+        $data_field_name = 'mt_favorite_color';
 
-    // Read in existing option value from database
-    $opt_val = get_option( $opt_name );
+        // Read in existing option value from database
+        $opt_val = get_option( $opt_name );
 
-    // See if the user has posted us some information
-    // If they did, this hidden field will be set to 'Y'
-    if( isset($_POST[ $hidden_field_name ]) && $_POST[ $hidden_field_name ] == 'Y' ) {
-        // Read their posted value
-        $opt_val = $_POST[ $data_field_name ];
+        // See if the user has posted us some information
+        // If they did, this hidden field will be set to 'Y'
+        if( isset($_POST[ $hidden_field_name ]) && $_POST[ $hidden_field_name ] == 'Y' ) {
+            // Read their posted value
+            $opt_val = $_POST[ $data_field_name ];
 
-        // Save the posted value in the database
-        update_option( $opt_name, $opt_val );
+            // Save the posted value in the database
+            update_option( $opt_name, $opt_val );
 
-        // Put a "settings saved" message on the screen
-
-        ?>
-        <div class="updated"><p><strong><?php _e('settings saved.', 'menu-test' ); ?></strong></p></div>
-        <?php
-
-            }
-
-            // Now display the settings editing screen
-
-            echo '<div class="wrap">';
-
-            // header
-
-            echo "<h2>" . __( 'Menu Test Plugin Settings', 'menu-test' ) . "</h2>";
-
-            // settings form
-            
             ?>
+            <div class="updated"><p><strong><?php _e('settings saved.', 'menu-test' ); ?></strong></p></div>
+            <?php
+        }
+        echo '<div class="wrap">';
+        echo "<h2>" . __( 'Menu Test Plugin Settings', 'menu-test' ) . "</h2>";
+        ?>
 
         <form name="form1" method="post" action="">
         <input type="hidden" name="<?php echo $hidden_field_name; ?>" value="Y">
@@ -201,8 +192,7 @@ function mt_settings_page() {
         </div>
 
         <?php
-         
-        }
+    }
 
     /**
      * Finalize the initialization of this plugin
@@ -233,6 +223,7 @@ function mt_settings_page() {
 
         add_filter( 'tribe_events_register_venue_type_args', array( $this,'tribe_venues_custom_field_support') );
         // add_action( 'tribe_events_single_venue_before_upcoming_events', array( $this,'show_wp_custom_fields') );
+        add_action('init', array( $this, 'register_post_types'));
     }
 
     public function add_custom_field_to_attendees( $post_id, $post, $update ) {
@@ -268,5 +259,55 @@ function mt_settings_page() {
     //         echo '<span>' . esc_html( $field ) . ': <strong> ' . esc_html( $value ) . '<strong></span><br/>';
     //     }
     // }
-}
-?>
+
+    function register_post_types(){
+        $args = array(
+            'label'  => null,
+            'labels' => array(
+                'name'               => '', // основное название для типа записи
+                'singular_name'      => '', // название для одной записи этого типа
+                'add_new'            => '', // для добавления новой записи
+                'add_new_item'       => '', // заголовка у вновь создаваемой записи в админ-панели.
+                'edit_item'          => '', // для редактирования типа записи
+                'new_item'           => '', // текст новой записи
+                'view_item'          => '', // для просмотра записи этого типа.
+                'search_items'       => '', // для поиска по этим типам записи
+                'not_found'          => '', // если в результате поиска ничего не было найдено
+                'not_found_in_trash' => '', // если не было найдено в корзине
+                'parent_item_colon'  => '', // для родительских типов. для древовидных типов
+                'menu_name'          => '', // название меню
+            ),
+            'description'         => '',
+            'public'              => false,
+            'publicly_queryable'  => null,
+            'exclude_from_search' => null,
+            'show_ui'             => null,
+            'show_in_menu'        => null,
+            'menu_position'       => null,
+            'menu_icon'           => null, 
+            //'capability_type'   => 'post',
+            //'capabilities'      => 'post', // массив дополнительных прав для этого типа записи
+            //'map_meta_cap'      => null, // Ставим true чтобы включить дефолтный обработчик специальных прав
+            'hierarchical'        => false,
+            'supports'            => array('title','editor'),
+            'taxonomies'          => array(),
+            'has_archive'         => false,
+            'rewrite'             => true,
+            'query_var'           => true,
+            'show_in_nav_menus'   => null,
+        );
+
+        register_post_type('type_name', $args );
+
+        // register_post_type( self::ATTENDEE_OBJECT, array(
+        //     'label'           => 'Attendees',
+        //     'public'          => false,
+        //     'show_ui'         => false,
+        //     'show_in_menu'    => false,
+        //     'query_var'       => false,
+        //     'rewrite'         => false,
+        //     'capability_type' => 'post',
+        //     'has_archive'     => false,
+        //     'hierarchical'    => true,
+        // ) );
+    }
