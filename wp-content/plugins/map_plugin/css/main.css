@@ -1,0 +1,34 @@
+.node text {
+    font: 12px sans-serif;
+}
+rect.selection {
+    stroke          : gray;
+    stroke-dasharray: 4px;
+    stroke-opacity  : 0.5;
+    fill            : transparent;
+}
+g.point rect {
+    stroke  : gray;
+    cursor  : pointer;
+}
+g.point rect.inner {
+    fill    : white;
+}
+g.point rect.outer {
+    display         : none;
+    stroke-dasharray: 4px;
+    stroke-opacity  : 0.5;
+    fill            : transparent;
+}
+g.point.selected rect.outer {
+    display         : inline;
+}
+svg *::selection {
+    background : transparent;
+}
+svg *::-moz-selection {
+    background:transparent;
+}
+svg *::-webkit-selection {
+    background:transparent;
+}

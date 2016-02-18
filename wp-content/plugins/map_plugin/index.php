@@ -14,7 +14,19 @@ function my_enqueue($hook) {
         return;
     }
 
-    wp_enqueue_script( 'my_custom_script', plugin_dir_url( __FILE__ ) . 'myscript.js', array('jquery') );
+    wp_enqueue_script( 'underscore-min.js', plugin_dir_url( __FILE__ ) . '/vendor/underscore/underscore-min.js' );
+    wp_enqueue_script( 'bootstrap.min.js', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/js/bootstrap.min.js' );
+    wp_enqueue_script( 'd3.min.js', plugin_dir_url( __FILE__ ) . '/vendor/d3/d3.min.js');
+    wp_enqueue_script( 'd3-transform.js', plugin_dir_url( __FILE__ ) . '/vendor/d3-transform/src/d3-transform.js' );
+    wp_enqueue_script( 'map_seats_app', plugin_dir_url( __FILE__ ) . '/js/app.js', array('jquery') );
+
+    wp_register_style( 'bootstrap_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap.min.css', false, '1.0.0' );
+    wp_register_style( 'bootstrap_theme_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap-theme.min.css', false, '1.0.0' );
+    wp_register_style( 'custom_wp_admin_css', plugin_dir_url( __FILE__ ) . '/css/main.css', false, '1.0.0' );
+
+    wp_enqueue_style( 'bootstrap_min_css' );
+    wp_enqueue_style( 'bootstrap_theme_min_css' );
+    wp_enqueue_style( 'custom_wp_admin_css' );
 }
 add_action( 'admin_enqueue_scripts', 'my_enqueue' );
 
@@ -141,6 +153,62 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         } else {
             echo '<p class="nosaved">' . esc_html__( 'No saved %s exists.') . '</p>';
         }
+        ?>
+            <div class="container">
+        <button style="margin-top:20px" type="button" class="btn btn-success" onclick="alert('Not implemented')"> New </button>
+        <button style="margin-top:20px" type="button" class="btn btn-warning" onclick="Graph.resetGraph()"> Reset </button>
+        <div class="dropdown" style="margin-top:10px">
+            <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Settings
+                <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                <li>
+                    <div style="margin-left: 15px; margin-right: 15px">
+                        <div class="row">
+                            <div class="col-lg-1">
+                                <button class="btn btn-warning" onclick="Graph.createSeatsLine(10)">Create Set of 10 Seats (Vertical)</button>
+                            </div>
+                        </div>
+                        <div class="form-inline" style="margin-top:10px">
+                            <div class="form-group">
+                                <input class="form-control" type="number" id="col-qty" placeholder="Input row qty" />
+                            </div>
+                            <button class="btn btn-success" onclick="createElementsRow()">Create</button>
+                        </div>
+                        <div class="form-inline" style="margin-top:10px">
+                            <div class="form-group">
+                                <input class="form-control" type="number" id="col-qty-with-numbering" placeholder="Input row qty" />
+                            </div>
+                            <div class="form-group">
+                                <input class="form-control" type="number" id="col-qty-with-numbering-start-from" placeholder="Start numering from" />
+                            </div>
+                            <button class="btn btn-success" onclick="createElementsRowWithNumberStaringFrom()">Create</button>
+                        </div>
+                    </div>
+
+                </li>
+            </ul>
+        </div>
+    </div>
+    <div id="graph"></div>
+
+    <script>
+        var Graph = new App();
+        var config = {
+            dataProvider: undefined
+        };
+        Graph.draw(config);
+
+        function createElementsRow () {
+            Graph.createSeatsLine($('#col-qty').val());
+        }
+
+        function createElementsRowWithNumberStaringFrom() {
+            Graph.createSeatsLine($('#col-qty-with-numbering').val(), $('#col-qty-with-numbering-start-from').val());
+        }
+    </script>
+        <?php
     }
 
     function fullAddressString( $postId = null ) {
