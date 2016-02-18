@@ -9,6 +9,15 @@ Author: Artem G.
 Author URI: http://
 */
 
+function my_enqueue($hook) {
+    if ( 'post-new.php' != $hook ) {
+        return;
+    }
+
+    wp_enqueue_script( 'my_custom_script', plugin_dir_url( __FILE__ ) . 'myscript.js', array('jquery') );
+}
+add_action( 'admin_enqueue_scripts', 'my_enqueue' );
+
 if( ! function_exists( 'map_create_post_type' ) ) :
     function map_create_post_type() {
         $labels = array(
@@ -92,41 +101,111 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         echo '<input type="hidden" name="map_post_noncename" value="' . wp_create_nonce( plugin_basename(__FILE__) ) . '" />';
  
         // Get the data if its already been entered
-        $map_post_name = get_post_meta($post->ID, '_map_post_name', true);
-        $map_post_desc = get_post_meta($post->ID, '_map_post_desc', true);
-        
-        ?>
-           <label for="myplugin_field"> Description for this field </label>
-            <select name="myplugin_field" id="myplugin_field" class="postbox">
-                <option value="">Select something…</option>
-                <option value="something">Something</option>
-                <option value="else">Else</option>
-            </select>
-        <?php
- 
-        // Echo out the field
-        ?>
- 
-        <table class="form-table">
-            <tr>
-                <th>
-                    <label>Name</label>
-                </th>
-                <td>
-                    <input type="text" name="map_post_name" class="regular-text" value="<?php echo $map_post_name; ?>"> 
-                    <!-- classes: .small-text .regular-text .large-text -->
-                </td>
-            </tr>
-            <tr>
-                <th>
-                    <label>Description</label>
-                </th>
-                <td>
-                    <textarea name="map_post_desc" class="large-text"><?php echo $map_post_desc; ?></textarea>
-                </td>
-            </tr>
-        </table>
-    <?php
+        // $map_post_name = get_post_meta($post->ID, '_map_post_name', true);
+        // $map_post_desc = get_post_meta($post->ID, '_map_post_desc', true);
+
+        $my_venue_ids     = array();
+        $current_user     = wp_get_current_user();
+        $my_venues        = false;
+        $my_venue_options = '';
+
+        $my_venues = get_venue_info(
+            null,
+            array(
+                'post_status' => array(
+                    'publish',
+                    'draft',
+                    'private',
+                    'pending',
+                ),
+                'author' => $current_user->ID,
+            )
+        );
+
+        if ( ! empty( $my_venues ) ) {
+            foreach ( $my_venues as $my_venue ) {
+                $my_venue_ids[] = $my_venue->ID;
+                $venue_title    = wp_kses( get_the_title( $my_venue->ID ), array() );
+                $my_venue_options .= '<option data-address="' . esc_attr( fullAddressString( $my_venue->ID ) ) . '" value="' . esc_attr( $my_venue->ID ) . '"';
+                $my_venue_options .= selected( $current, $my_venue->ID, false );
+                $my_venue_options .= '>' . $venue_title . '</option>';
+            }
+        }
+
+        if ( $my_venues ) {
+            $venue_pto = get_post_type_object('tribe_venue');
+            echo '<label for="saved_venue"><b>Choose venue:</b></label> <br />';
+            echo '<select class="chosen venue-dropdown" name="' . esc_attr( $name ) . '" id="saved_venue">';
+            echo $my_venue_options;
+            echo '</select>';
+        } else {
+            echo '<p class="nosaved">' . esc_html__( 'No saved %s exists.') . '</p>';
+        }
+    }
+
+    function fullAddressString( $postId = null ) {
+            $address = '';
+            if ( tribe_get_address( $postId ) ) {
+                $address .= tribe_get_address( $postId );
+            }
+
+            if ( tribe_get_city( $postId ) ) {
+                if ( $address != '' ) {
+                    $address .= ', ';
+                }
+                $address .= tribe_get_city( $postId );
+            }
+
+            if ( tribe_get_region( $postId ) ) {
+                if ( $address != '' ) {
+                    $address .= ', ';
+                }
+                $address .= tribe_get_region( $postId );
+            }
+
+            if ( tribe_get_zip( $postId ) ) {
+                if ( $address != '' ) {
+                    $address .= ', ';
+                }
+                $address .= tribe_get_zip( $postId );
+            }
+
+            if ( tribe_get_country( $postId ) ) {
+                if ( $address != '' ) {
+                    $address .= ', ';
+                }
+                $address .= tribe_get_country( $postId );
+            }
+
+            return $address;
+        }
+
+    /**
+     * Get venue info.
+     *
+     * @param int $p          post id
+     * @param     $args
+     *
+     * @return WP_Query->posts || false
+     */
+    function get_venue_info( $p = null, $args = array() ) {
+        $defaults = array(
+            'post_type'            => 'tribe_venue',
+            'nopaging'             => 1,
+            'post_status'          => 'publish',
+            'ignore_sticky_posts ' => 1,
+            'orderby'              => 'title',
+            'order'                => 'ASC',
+            'p'                    => $p,
+        );
+
+        $args = wp_parse_args( $args, $defaults );
+        $r    = new WP_Query( $args );
+        if ( $r->have_posts() ) :
+            return $r->posts;
+        endif;
+
+        return false;
     }
  
  
@@ -153,9 +232,10 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         }
         // ok, we're authenticated: we need to find and save the data
         // we'll put it into an array to make it easier to loop though
- 
-        $map_post_meta['_map_post_name'] = $_POST['map_post_name'];
-        $map_post_meta['_map_post_desc'] = $_POST['map_post_desc'];
+
+        //add venue data
+        // $map_post_meta['_map_post_name'] = $_POST['map_post_name'];
+        // $map_post_meta['_map_post_desc'] = $_POST['map_post_desc'];
  
         // add values as custom fields
         foreach( $map_post_meta as $key => $value ) { // cycle through the $map_post_meta array
