@@ -122,7 +122,7 @@ function App() {}
             });
 
         this.graph = this.svg
-            .attr("width", this.width + this.margin.right + this.margin.left)
+            .attr("width", '100%')//this.width + this.margin.right + this.margin.left)
             .attr("height", this.height + this.margin.top + this.margin.bottom)
             .append('g')
             .attr("transform", "translate(" + (this.width / 3) + "," + this.margin.top * 2 + ")");

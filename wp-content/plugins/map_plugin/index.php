@@ -10,7 +10,7 @@ Author URI: http://
 */
 
 function my_enqueue($hook) {
-    if ( 'post-new.php' != $hook ) {
+    if ( 'post-new.php' != $hook && 'post.php' != $hook ) {
         return;
     }
 
@@ -103,7 +103,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
  
  
     function map_add_post_type_metabox() { // add the meta box
-        add_meta_box( 'map_metabox', 'Meta', 'map_metabox', 'map_seats', 'normal' );
+        add_meta_box( 'map_metabox', 'Map Editor', 'map_metabox', 'map_seats', 'normal' );
     }
  
  
@@ -115,6 +115,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         // Get the data if its already been entered
         // $map_post_name = get_post_meta($post->ID, '_map_post_name', true);
         // $map_post_desc = get_post_meta($post->ID, '_map_post_desc', true);
+        $selected_venue_id = get_post_meta($post->ID, '_map_venue_id', true);
 
         $my_venue_ids     = array();
         $current_user     = wp_get_current_user();
@@ -139,7 +140,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
                 $my_venue_ids[] = $my_venue->ID;
                 $venue_title    = wp_kses( get_the_title( $my_venue->ID ), array() );
                 $my_venue_options .= '<option data-address="' . esc_attr( fullAddressString( $my_venue->ID ) ) . '" value="' . esc_attr( $my_venue->ID ) . '"';
-                $my_venue_options .= selected( $current, $my_venue->ID, false );
+                $my_venue_options .= selected( $selected_venue_id, $my_venue->ID, false );
                 $my_venue_options .= '>' . $venue_title . '</option>';
             }
         }
@@ -147,67 +148,66 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         if ( $my_venues ) {
             $venue_pto = get_post_type_object('tribe_venue');
             echo '<label for="saved_venue"><b>Choose venue:</b></label> <br />';
-            echo '<select class="chosen venue-dropdown" name="' . esc_attr( $name ) . '" id="saved_venue">';
+            echo '<select class="chosen venue-dropdown" name="' . esc_attr( 'venue_id' ) . '" id="saved_venue">';
             echo $my_venue_options;
             echo '</select>';
         } else {
             echo '<p class="nosaved">' . esc_html__( 'No saved %s exists.') . '</p>';
         }
         ?>
-            <div class="container">
-        <button style="margin-top:20px" type="button" class="btn btn-success" onclick="alert('Not implemented')"> New </button>
-        <button style="margin-top:20px" type="button" class="btn btn-warning" onclick="Graph.resetGraph()"> Reset </button>
-        <div class="dropdown" style="margin-top:10px">
-            <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                Settings
-                <span class="caret"></span>
-            </button>
-            <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
-                <li>
-                    <div style="margin-left: 15px; margin-right: 15px">
-                        <div class="row">
-                            <div class="col-lg-1">
-                                <button class="btn btn-warning" onclick="Graph.createSeatsLine(10)">Create Set of 10 Seats (Vertical)</button>
+        <div class="container">
+            <button style="margin-top:20px" type="button" class="btn btn-success" onclick="alert('Not implemented')"> New </button>
+            <button style="margin-top:20px" type="button" class="btn btn-warning" onclick="Graph.resetGraph()"> Reset </button>
+            <div class="dropdown" style="margin-top:10px">
+                <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Settings
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                    <li>
+                        <div style="margin-left: 15px; margin-right: 15px">
+                            <div class="row">
+                                <div class="col-lg-1">
+                                    <button type="button" class="btn btn-warning" onclick="Graph.createSeatsLine(10)">Create Set of 10 Seats (Vertical)</button>
+                                </div>
+                            </div>
+                            <div class="form-inline" style="margin-top:10px">
+                                <div class="form-group">
+                                    <input class="form-control" type="number" id="col-qty" placeholder="Input row qty" />
+                                </div>
+                                <button type="button" class="btn btn-success" onclick="createElementsRow()">Create</button>
+                            </div>
+                            <div class="form-inline" style="margin-top:10px">
+                                <div class="form-group">
+                                    <input class="form-control" type="number" id="col-qty-with-numbering" placeholder="Input row qty" />
+                                </div>
+                                <div class="form-group">
+                                    <input class="form-control" type="number" id="col-qty-with-numbering-start-from" placeholder="Start numering from" />
+                                </div>
+                                <button type="button" class="btn btn-success" onclick="createElementsRowWithNumberStaringFrom()">Create</button>
                             </div>
                         </div>
-                        <div class="form-inline" style="margin-top:10px">
-                            <div class="form-group">
-                                <input class="form-control" type="number" id="col-qty" placeholder="Input row qty" />
-                            </div>
-                            <button class="btn btn-success" onclick="createElementsRow()">Create</button>
-                        </div>
-                        <div class="form-inline" style="margin-top:10px">
-                            <div class="form-group">
-                                <input class="form-control" type="number" id="col-qty-with-numbering" placeholder="Input row qty" />
-                            </div>
-                            <div class="form-group">
-                                <input class="form-control" type="number" id="col-qty-with-numbering-start-from" placeholder="Start numering from" />
-                            </div>
-                            <button class="btn btn-success" onclick="createElementsRowWithNumberStaringFrom()">Create</button>
-                        </div>
-                    </div>
 
-                </li>
-            </ul>
+                    </li>
+                </ul>
+            </div>
         </div>
-    </div>
-    <div id="graph"></div>
+        <div id="graph"></div>
+        <script>
+            var Graph = new App();
+            var config = {
+                dataProvider: undefined
+            };
+            Graph.draw(config);
 
-    <script>
-        var Graph = new App();
-        var config = {
-            dataProvider: undefined
-        };
-        Graph.draw(config);
+            function createElementsRow () {
+                Graph.createSeatsLine(jQuery('#col-qty').val());
+            }
 
-        function createElementsRow () {
-            Graph.createSeatsLine($('#col-qty').val());
-        }
-
-        function createElementsRowWithNumberStaringFrom() {
-            Graph.createSeatsLine($('#col-qty-with-numbering').val(), $('#col-qty-with-numbering-start-from').val());
-        }
-    </script>
+            function createElementsRowWithNumberStaringFrom() {
+                Graph.createSeatsLine(jQuery('#col-qty-with-numbering').val(), jQuery('#col-qty-with-numbering-start-from').val());
+            }
+        </script>
         <?php
     }
 
@@ -304,6 +304,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         //add venue data
         // $map_post_meta['_map_post_name'] = $_POST['map_post_name'];
         // $map_post_meta['_map_post_desc'] = $_POST['map_post_desc'];
+        $map_post_meta['_map_venue_id'] = $_POST['venue_id'];
  
         // add values as custom fields
         foreach( $map_post_meta as $key => $value ) { // cycle through the $map_post_meta array
@@ -347,20 +348,21 @@ if( ! function_exists( 'view_maps_posts' ) ) : // output
  
         $html = '';
         foreach ( $posts as $post ) {
-            $meta_name = get_post_meta( $post->ID, '_map_post_name', true );
-            $meta_desc = get_post_meta( $post->ID, '_map_post_desc', true );
-            $img = get_the_post_thumbnail( $post->ID, 'medium' );
-            if( empty( $img ) ) {
-                $img = '<img src="'.plugins_url( '/img/default.png', __FILE__ ).'">';
-            }
+            // $meta_name = get_post_meta( $post->ID, '_map_post_name', true );
+            // $meta_desc = get_post_meta( $post->ID, '_map_post_desc', true );
+            $meta_venue = get_post_meta( $post->ID, '_map_venue_id', true );
+            // $img = get_the_post_thumbnail( $post->ID, 'medium' );
+            // if( empty( $img ) ) {
+            //     $img = '<img src="'.plugins_url( '/img/default.png', __FILE__ ).'">';
+            // }
  
  
-            if( has_post_thumbnail( $post->ID ) ) {
-                $img = wp_get_attachment_image_src( get_post_thumbnail_id( $post->ID ), 'thumbnail' );
-                $img_url = $img[0];
+            // if( has_post_thumbnail( $post->ID ) ) {
+            //     $img = wp_get_attachment_image_src( get_post_thumbnail_id( $post->ID ), 'thumbnail' );
+            //     $img_url = $img[0];
  
-                //the_post_thumbnail( 'thumbnail' ); /* thumbnail, medium, large, full, thumb-100, thumb-200, thumb-400, array(100,100) */
-            }
+            //     //the_post_thumbnail( 'thumbnail' ); /* thumbnail, medium, large, full, thumb-100, thumb-200, thumb-400, array(100,100) */
+            // }
  
             $content = $post->post_content;
             if( $do_shortcode == 1 ) {
@@ -376,10 +378,8 @@ if( ! function_exists( 'view_maps_posts' ) ) : // output
             <div>
                 <h3>'.$post->post_title.'</h3>
                 <div>
-                    <p>Name: '.$meta_name.'</p>
-                    <p>Description: '.$meta_desc.'</p>
+                    <p>Venue_id: '.$meta_venue.'</p>
                 </div>
-                <div>'.$img.'</div>
                 <div>'.$content.'</div>
             </div>
             ';
