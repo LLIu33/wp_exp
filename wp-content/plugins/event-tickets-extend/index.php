@@ -102,6 +102,14 @@ class Tribe__Tickets__Main__Extend {
 
         add_filter( 'tribe_events_register_venue_type_args', array( $this,'tribe_venues_custom_field_support') );
         // add_action( 'tribe_events_single_venue_before_upcoming_events', array( $this,'show_wp_custom_fields') );
+
+        add_filter('tribe_events_meta_box_template', array($this, 'change_event_mb_tpl'));
+    }
+
+
+    public function change_event_mb_tpl($tpl) {
+        var_dump($tpl);//die;
+        return $tpl;
     }
 
     public function add_custom_field_to_attendees( $post_id, $post, $update ) {
