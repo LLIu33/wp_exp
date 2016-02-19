@@ -194,10 +194,15 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         </div>
         <div id="graph"></div>
         <script>
-            var Graph = new App();
             var config = {
-                dataProvider: undefined
+                dataProvider: 'fakeData',
+                margin: { top: 100, right: 120, bottom: 100, left: 120 },
+                width: '100%',
+                height: '960',
+                duration: '1000'
             };
+            var Graph = new App();
+
             Graph.draw(config);
 
             function createElementsRow () {
