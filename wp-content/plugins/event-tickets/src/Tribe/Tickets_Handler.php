@@ -181,6 +181,7 @@ class Tribe__Tickets__Tickets_Handler {
 			exit;
 		} else {
 			$this->attendees_table = new Tribe__Tickets__Attendees_Table();
+
 			$this->maybe_generate_attendees_csv();
 
 			add_filter( 'admin_title', array( $this, 'attendees_admin_title' ), 10, 2 );
@@ -232,7 +233,6 @@ class Tribe__Tickets__Tickets_Handler {
 		}
 
 		$columns = $this->attendees_table->get_columns();
-		do_action('render_attendees_table', $this->attendees_table);
 		$hidden  = get_hidden_columns( $this->attendees_page );
 
 		// We dont want to export html inputs or private data

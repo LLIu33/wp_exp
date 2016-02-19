@@ -9,7 +9,7 @@ class Tribe__Tickets__Main {
 	/**
 	 * Current version of this plugin
 	 */
-	const VERSION = '4.0.4';
+	const VERSION = '4.0.5';
 
 	/**
 	 * Min required The Events Calendar version
@@ -219,7 +219,7 @@ class Tribe__Tickets__Main {
 		add_action( 'admin_enqueue_scripts', array( 'Tribe__Tickets__Metabox', 'add_admin_scripts' ) );
 		add_filter( 'tribe_post_types', array( $this, 'inject_post_types' ) );
 
-		// // Setup Help Tab texting
+		// Setup Help Tab texting
 		add_action( 'tribe_help_pre_get_sections', array( $this, 'add_help_section_support_content' ) );
 		add_action( 'tribe_help_pre_get_sections', array( $this, 'add_help_section_featured_content' ) );
 		add_action( 'tribe_help_pre_get_sections', array( $this, 'add_help_section_extra_content' ) );
