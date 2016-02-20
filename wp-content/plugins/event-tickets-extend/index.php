@@ -108,8 +108,7 @@ class Tribe__Tickets__Main__Extend {
 
 
     public function change_event_mb_tpl($tpl) {
-        var_dump($tpl);//die;
-        return $tpl;
+        return $this->plugin_path . '/events-meta-box.php';
     }
 
     public function add_custom_field_to_attendees( $post_id, $post, $update ) {
