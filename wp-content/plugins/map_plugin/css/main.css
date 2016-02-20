@@ -8,12 +8,12 @@ rect.selection {
     fill            : transparent;
 }
 g.point rect {
-    stroke  : gray;
+    stroke  : black;
     cursor  : pointer;
 }
-g.point rect.inner {
+/*g.point rect.inner {
     fill    : white;
-}
+}*/
 g.point rect.outer {
     display         : none;
     stroke-dasharray: 4px;
@@ -31,8 +31,4 @@ svg *::-moz-selection {
 }
 svg *::-webkit-selection {
     background:transparent;
-}
-
-#postdivrich {
-    display: none;
 }

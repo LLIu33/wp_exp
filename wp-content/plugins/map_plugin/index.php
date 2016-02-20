@@ -111,8 +111,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
                     'draft',
                     'private',
                     'pending',
-                ),
-                'author' => $current_user->ID,
+                )
             )
         );
 
@@ -136,6 +135,11 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             echo '<p class="nosaved">' . esc_html__( 'No saved %s exists.') . '</p>';
         }
         ?>
+        <style>
+            #postdivrich {
+                display: none;
+            }
+        </style>
         <div class="container">
             <button style="margin-top:20px" type="button" class="btn btn-success" onclick="alert('Not implemented')"> New </button>
             <button style="margin-top:20px" type="button" class="btn btn-warning" onclick="Graph.resetGraph()"> Reset </button>
@@ -172,6 +176,12 @@ if( ! function_exists( 'map_create_post_type' ) ) :
                     </li>
                 </ul>
             </div>
+            <div class="row" style="margin-top:10px">
+            <div>
+                <span>Elements count by color</span>
+                <div class="alert alert-info" role="alert" id="shapes_calculations_tickets_app"></div>
+            </div>
+        </div>
         </div>
         <div id="graph"></div>
         <input type="hidden" id="graphData" name="graphData" />
