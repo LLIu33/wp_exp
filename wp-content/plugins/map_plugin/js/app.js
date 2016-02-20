@@ -124,7 +124,7 @@ function App() {}
             .on("keydown", function() {
                 if(d3.event.keyCode === 46) {
                     d3.selectAll('g.selected').each(function (d) {
-                        var existing = _.find(self.shapes, d);
+                        var existing = _.where(self.shapes, d);
                         if(existing) {
                             self.shapes = _.reject(self.shapes, function(shape) {
                                 return shape.id === d.id;
