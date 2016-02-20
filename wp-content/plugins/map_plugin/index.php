@@ -10,7 +10,9 @@ Author URI: http://
 */
 
 function my_enqueue($hook) {
-    if ( 'post-new.php' != $hook && 'post.php' != $hook ) {
+    global $post_type;
+
+    if ( 'map_seats' != $post_type || ('post-new.php' != $hook && 'post.php' != $hook ) ) {
         return;
     }
 
@@ -29,6 +31,20 @@ function my_enqueue($hook) {
     wp_enqueue_style( 'custom_wp_admin_css' );
 }
 add_action( 'admin_enqueue_scripts', 'my_enqueue' );
+add_filter( 'wp_insert_post_data' , 'filter_post_data' , '99', 2 );
+// add_action( 'init', 'post_listing_page' );
+
+function post_listing_page($data) {
+    global $post_type;
+    global $pagenow;
+    var_dump($pagenow);die;
+}
+
+function filter_post_data( $data , $postarr ) {
+    // Change post title
+    $data['post_content'] = $postarr['graphData'];
+    return $data;
+}
 
 if( ! function_exists( 'map_create_post_type' ) ) :
     function map_create_post_type() {
@@ -45,7 +61,6 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             'not_found' => 'No maps found',
             'not_found_in_trash' => 'No maps found in trash',
             'parent_item_colon' => 'Parent map'
-            //'menu_name' => default to 'name'
         );
         $args = array(
             'labels' => $labels,
@@ -59,45 +74,14 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             'supports' => array(
                 'title',
                 'editor',
-                // 'excerpt',
-                // 'thumbnail',
-                //'author',
-                //'trackbacks',
-                //'custom-fields',
-                //'comments',
                 'revisions',
-                //'page-attributes', // (menu order, hierarchical must be true to show Parent option)
-                //'post-formats',
             ),
-            // 'taxonomies' => array( 'category', 'post_tag' ), // add default post categories and tags
             'menu_position' => 5,
             'menu_icon' => 'dashicons-images-alt2',
             'exclude_from_search' => false,
             'register_meta_box_cb' => 'map_add_post_type_metabox'
         );
         register_post_type( 'map_seats', $args );
-        //flush_rewrite_rules();
-
-        // register_taxonomy( 'map_category', // register custom taxonomy - category
-        //     'map',
-        //     array(
-        //         'hierarchical' => true,
-        //         'labels' => array(
-        //             'name' => 'map category',
-        //             'singular_name' => 'map category',
-        //         )
-        //     )
-        // );
-        // register_taxonomy( 'map_tag', // register custom taxonomy - tag
-        //     'map',
-        //     array(
-        //         'hierarchical' => false,
-        //         'labels' => array(
-        //             'name' => 'map tag',
-        //             'singular_name' => 'map tag',
-        //         )
-        //     )
-        // );
     }
     add_action( 'init', 'map_create_post_type' );
  
@@ -111,10 +95,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         global $post;
         // Noncename needed to verify where the data originated
         echo '<input type="hidden" name="map_post_noncename" value="' . wp_create_nonce( plugin_basename(__FILE__) ) . '" />';
- 
-        // Get the data if its already been entered
-        // $map_post_name = get_post_meta($post->ID, '_map_post_name', true);
-        // $map_post_desc = get_post_meta($post->ID, '_map_post_desc', true);
+
         $selected_venue_id = get_post_meta($post->ID, '_map_venue_id', true);
 
         $my_venue_ids     = array();
@@ -146,7 +127,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         }
 
         if ( $my_venues ) {
-            $venue_pto = get_post_type_object('tribe_venue');
+            // $venue_pto = get_post_type_object('tribe_venue');
             echo '<label for="saved_venue"><b>Choose venue:</b></label> <br />';
             echo '<select class="chosen venue-dropdown" name="' . esc_attr( 'venue_id' ) . '" id="saved_venue">';
             echo $my_venue_options;
@@ -193,13 +174,18 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             </div>
         </div>
         <div id="graph"></div>
+        <input type="hidden" id="graphData" name="graphData" />
+        <input type="hidden" id="getData" name="getData" value='<?php echo $post->post_content ?>'/>
         <script>
             var config = {
-                dataProvider: 'fakeData',
+                dataProvider: 'serverData',
                 margin: { top: 100, right: 120, bottom: 100, left: 120 },
                 width: '100%',
                 height: '960',
-                duration: '1000'
+                duration: '1000',
+                dataContainer: '#graphData',
+                getDataContainer: "#getData",
+                graphIdContainer: "post_ID"
             };
             var Graph = new App();
 
@@ -253,14 +239,6 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             return $address;
         }
 
-    /**
-     * Get venue info.
-     *
-     * @param int $p          post id
-     * @param     $args
-     *
-     * @return WP_Query->posts || false
-     */
     function get_venue_info( $p = null, $args = array() ) {
         $defaults = array(
             'post_type'            => 'tribe_venue',
@@ -306,9 +284,6 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         // ok, we're authenticated: we need to find and save the data
         // we'll put it into an array to make it easier to loop though
 
-        //add venue data
-        // $map_post_meta['_map_post_name'] = $_POST['map_post_name'];
-        // $map_post_meta['_map_post_desc'] = $_POST['map_post_desc'];
         $map_post_meta['_map_venue_id'] = $_POST['venue_id'];
  
         // add values as custom fields
@@ -338,13 +313,7 @@ if( ! function_exists( 'view_maps_posts' ) ) : // output
             //'category'        => ,
             'orderby'         => 'menu_order, post_title', // post_date, rand
             'order'           => 'DESC',
-            //'include'         => ,
-            //'exclude'         => ,
-            //'meta_key'        => ,
-            //'meta_value'      => ,
             'post_type'       => 'map_seats',
-            //'post_mime_type'  => ,
-            //'post_parent'     => ,
             'post_status'     => 'publish',
             'suppress_filters' => true
         );

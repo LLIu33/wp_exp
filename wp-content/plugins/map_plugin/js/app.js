@@ -61,9 +61,6 @@ function App() {}
                 self.saveGraph();
             });
     };
-    /*App.prototype.removeShapes = function() {
-
-    };*/
     App.prototype.selectAllShapes = function () {
         var shapes = [];
         d3.selectAll('g.point').each(function (d) {
@@ -104,7 +101,24 @@ function App() {}
         this.height = this.config.height - this.margin.top - this.margin.bottom;
         this.duration = this.config.duration;
         this.shapes = [];
+        //below is the hardcoded selection corrections constants
+        this.widthCorrection = 50;
+        this.heightCorrection = 225;
+        //end of correction constants
+        this.graphId = function () {
+            var id = jQuery('input[name="post_ID"]').val();
+            if(! id) return 'graph';
+            return id;
+        };
         self = this;
+
+        this.zoomListener = d3.behavior.zoom()
+            .scaleExtent([-10, 10])
+            .on("zoom", function () {
+                if (d3.event.sourceEvent.type === 'wheel') {
+                    self.graph.attr("transform", "translate(" + d3.event.translate + ")" + " scale(" + d3.event.scale + ")")
+                }
+            });
 
         d3.select("body")
             .on("keydown", function() {
@@ -200,8 +214,8 @@ function App() {}
                         var elementAbsoluteCoords = this.getBoundingClientRect();
                         if(
                             !d3.select(this).classed("selected") &&
-                            elementAbsoluteCoords.left >= d.x && elementAbsoluteCoords.right <= d.x+d.width &&
-                            elementAbsoluteCoords.top >= d.y && elementAbsoluteCoords.bottom <= d.y+d.height
+                            elementAbsoluteCoords.left >= d.x && elementAbsoluteCoords.right <= d.x+d.width + self.widthCorrection &&
+                            elementAbsoluteCoords.top >= d.y && elementAbsoluteCoords.bottom <= d.y+d.height + self.heightCorrection
                         ) {
 
                             d3.select(this.parentNode)
@@ -225,8 +239,16 @@ function App() {}
         this.graph = this.svg
             .attr("width", this.calculateGraphWidthCorrection())
             .attr("height", this.height + this.margin.top + this.margin.bottom)
+            .call(this.zoomListener)
+            .on("mousedown.zoom", null)
+            .on("touchstart.zoom", null)
+            .on("touchmove.zoom", null)
+            .on("touchend.zoom", null)
             .append('g')
             .attr("transform", "translate(" + (this.width / 3) + "," + this.margin.top * 2 + ")");
+
+        this._createToolsSet();
+
     };
     App.prototype._drawFloor = function () {
         this.getData().then(function (response) {
@@ -236,6 +258,7 @@ function App() {}
     };
     App.prototype._createShapes = function (data) {
         var i = 0;
+
 
         this.node = this.graph.selectAll("g.point").data(data, function(d) {
             return d.id || (d.id = ++i);
@@ -295,29 +318,108 @@ function App() {}
         .unique()
         .value();
 };
+    App.prototype._createToolsSet = function () {
+        var i = 0;
+
+        this.tool = this.graph.selectAll("g.tool").data(this.toolsData(), function(d) {
+            return d.id || (d.id = ++i);
+        });
+
+        this.toolEnter = this.tool.enter()
+            .append('g')
+            .attr("class", "tool");
+
+        this._createCategoriesTool();
+
+        this.rotate(this.tool);
+
+        this.toolExit = this.tool.exit()
+            .remove();
+        this.toolExit.select("text")
+            .remove();
+    };
+    App.prototype._createCategoriesTool = function () {
+        this.toolEnter
+            .append("rect")
+            .attr("x", function(d) {
+                return d.x;
+            })
+            .attr("y", function (d) {
+                return d.y;
+            })
+            .attr("width", function (d) {
+                return d.w;
+            })
+            .attr("height", function (d) {
+                return d.h;
+            })
+            .attr("fill", 'white')
+            .attr("stroke", "gray");
+
+        this.toolEnter.append("text")
+            .attr("x", function (d) {
+                return d.x + d.w/2;
+            })
+            .attr("y", function (d) {
+                return d.y + 30;
+            })
+            .attr("text-anchor", "middle")
+            .text(function(d){
+                return d.name;
+            })
+            .style("font-size", "22px")
+            .style("fill-opacity", 1);
+
+        this.toolEnter.append("text")
+            .attr("x", function (d) {
+                return d.x + d.w/2;
+            })
+            .attr("y", function (d) {
+                return d.y + d.h-10;
+            })
+            .attr("text-anchor", "middle")
+            .text("ADD CATEGORY")
+            .style("font-size", "18px")
+            .style("fill-opacity", 1);
+    };
 
     App.prototype.resetGraph = function () {
         localStorage.setItem('graph', null);
         this._drawFloor();
     };
     App.prototype.saveGraph = function () {
-        this._saveGraphToLocalStorage(this.selectAllShapes());
+        var data = this.selectAllShapes();
+        this._saveGraphToLocalStorage(data);
+        this._saveGraphDataToInput(data);
     };
     App.prototype.exportGraph = function () {
         this._saveGraphToExternalStorage(this.selectAllShapes());
     };
     App.prototype._saveGraphToLocalStorage = function (data) {
-        localStorage.setItem('graph', JSON.stringify(data));
+        localStorage.setItem(this.graphId(), JSON.stringify(data));
     };
     App.prototype._loadGraphFromLocalStorage = function () {
-        var data = localStorage.getItem('graph');
+        var data = localStorage.getItem(this.graphId());
         return JSON.parse(data);
     };
     App.prototype._saveGraphToExternalStorage = function (data) {
-        console.log('Shapes List: ', JSON.stringify(data));
+        var response = {
+            'data': JSON.stringify(data),
+            'categories': this._getUniqueColorsList(self.shapes)
+        };
+        console.log('Response Example: ', response);
         alert('You need to implement _saveGraphToExternalStorage method to be able to save')
     };
+    App.prototype._saveGraphDataToInput = function (data) {
+        var container = jQuery(this.config.dataContainer);
+        container.val(JSON.stringify(data));
+    };
 
+    App.prototype.toolsData = function () {
+        return [
+            {x: 525, y: -85, w:300, h:200, name: 'ADD SEATS'}
+        ];
+    };
     App.prototype.fakeData = function () {
         return jQuery.Deferred(function () {
             var that = this;
@@ -345,8 +447,13 @@ function App() {}
         })
     };
     App.prototype.serverData = function () {
-        alert('You need to describe how to receive data from server');
-        return [];
+        return jQuery.Deferred(function () {
+            var data = jQuery(self.config.getDataContainer).val();
+            if(data) {
+                this.resolve(JSON.parse(data));
+            }
+            this.resolve([]);
+        });
     };
     App.prototype.getData = function () {
         var localData = this._loadGraphFromLocalStorage();
