@@ -16,7 +16,16 @@ function my_enqueue($hook) {
         return;
     }
 
-    wp_enqueue_script( 'underscore-min.js', plugin_dir_url( __FILE__ ) . '/vendor/underscore/underscore-min.js' );
+    // comment out the next two lines to load the local copy of jQuery
+    wp_deregister_script('jquery');
+    wp_register_script('jquery', 'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js', false, '2.2.1');
+    wp_enqueue_script('jquery');
+
+    // comment out the next two lines to load the local copy of Underscore
+    wp_deregister_script('underscore');
+    wp_register_script('underscore', 'https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js', false, '1.8.3');
+    wp_enqueue_script('underscore');
+
     wp_enqueue_script( 'bootstrap.min.js', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/js/bootstrap.min.js' );
     wp_enqueue_script( 'd3.min.js', plugin_dir_url( __FILE__ ) . '/vendor/d3/d3.min.js');
     wp_enqueue_script( 'd3-transform.js', plugin_dir_url( __FILE__ ) . '/vendor/d3-transform/src/d3-transform.js' );
@@ -177,11 +186,11 @@ if( ! function_exists( 'map_create_post_type' ) ) :
                 </ul>
             </div>
             <div class="row" style="margin-top:10px">
-            <div>
-                <span>Elements count by color</span>
-                <div class="alert alert-info" role="alert" id="shapes_calculations_tickets_app"></div>
+                <div>
+                    <span>Elements count by color</span>
+                    <div class="alert alert-info" role="alert" id="shapes_calculations_tickets_app"></div>
+                </div>
             </div>
-        </div>
         </div>
         <div id="graph"></div>
         <input type="hidden" id="graphData" name="graphData" />
@@ -213,41 +222,41 @@ if( ! function_exists( 'map_create_post_type' ) ) :
     }
 
     function fullAddressString( $postId = null ) {
-            $address = '';
-            if ( tribe_get_address( $postId ) ) {
-                $address .= tribe_get_address( $postId );
-            }
-
-            if ( tribe_get_city( $postId ) ) {
-                if ( $address != '' ) {
-                    $address .= ', ';
-                }
-                $address .= tribe_get_city( $postId );
-            }
-
-            if ( tribe_get_region( $postId ) ) {
-                if ( $address != '' ) {
-                    $address .= ', ';
-                }
-                $address .= tribe_get_region( $postId );
-            }
-
-            if ( tribe_get_zip( $postId ) ) {
-                if ( $address != '' ) {
-                    $address .= ', ';
-                }
-                $address .= tribe_get_zip( $postId );
-            }
-
-            if ( tribe_get_country( $postId ) ) {
-                if ( $address != '' ) {
-                    $address .= ', ';
-                }
-                $address .= tribe_get_country( $postId );
-            }
-
-            return $address;
+        $address = '';
+        if ( tribe_get_address( $postId ) ) {
+            $address .= tribe_get_address( $postId );
         }
+
+        if ( tribe_get_city( $postId ) ) {
+            if ( $address != '' ) {
+                $address .= ', ';
+            }
+            $address .= tribe_get_city( $postId );
+        }
+
+        if ( tribe_get_region( $postId ) ) {
+            if ( $address != '' ) {
+                $address .= ', ';
+            }
+            $address .= tribe_get_region( $postId );
+        }
+
+        if ( tribe_get_zip( $postId ) ) {
+            if ( $address != '' ) {
+                $address .= ', ';
+            }
+            $address .= tribe_get_zip( $postId );
+        }
+
+        if ( tribe_get_country( $postId ) ) {
+            if ( $address != '' ) {
+                $address .= ', ';
+            }
+            $address .= tribe_get_country( $postId );
+        }
+
+        return $address;
+    }
 
     function get_venue_info( $p = null, $args = array() ) {
         $defaults = array(
