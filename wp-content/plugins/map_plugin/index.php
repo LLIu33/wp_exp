@@ -29,6 +29,8 @@ function my_enqueue($hook) {
     wp_enqueue_script( 'bootstrap.min.js', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/js/bootstrap.min.js' );
     wp_enqueue_script( 'd3.min.js', plugin_dir_url( __FILE__ ) . '/vendor/d3/d3.min.js');
     wp_enqueue_script( 'd3-transform.js', plugin_dir_url( __FILE__ ) . '/vendor/d3-transform/src/d3-transform.js' );
+    wp_enqueue_script( 'jquery-ui.min.js', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/jquery-ui.min.js' );
+    wp_enqueue_script( 'jquery.colorpicker.js', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.js' );
     wp_enqueue_script( 'map_seats_app', plugin_dir_url( __FILE__ ) . '/js/app.js', array('jquery') );
 
     wp_register_style( 'bootstrap_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap.min.css', false, '1.0.0' );
@@ -149,58 +151,126 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             }
         </style>
         <div class="container">
-            <button style="margin-top:20px" type="button" class="btn btn-success" onclick="alert('Not implemented')"> New </button>
-            <button style="margin-top:20px" type="button" class="btn btn-warning" onclick="Graph.resetGraph()"> Reset </button>
-            <div class="dropdown" style="margin-top:10px">
-                <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Settings
-                    <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
-                    <li>
-                        <div style="margin-left: 15px; margin-right: 15px">
-                            <div class="row">
-                                <div class="col-lg-1">
-                                    <button type="button" class="btn btn-warning" onclick="Graph.createSeatsLine(10)">Create Set of 10 Seats (Vertical)</button>
-                                </div>
-                            </div>
-                            <div class="form-inline" style="margin-top:10px">
-                                <div class="form-group">
-                                    <input class="form-control" type="number" id="col-qty" placeholder="Input row qty" />
-                                </div>
-                                <button type="button" class="btn btn-success" onclick="createElementsRow()">Create</button>
-                            </div>
-                            <div class="form-inline" style="margin-top:10px">
-                                <div class="form-group">
-                                    <input class="form-control" type="number" id="col-qty-with-numbering" placeholder="Input row qty" />
-                                </div>
-                                <div class="form-group">
-                                    <input class="form-control" type="number" id="col-qty-with-numbering-start-from" placeholder="Start numering from" />
-                                </div>
-                                <button type="button" class="btn btn-success" onclick="createElementsRowWithNumberStaringFrom()">Create</button>
-                            </div>
-                        </div>
-
-                    </li>
-                </ul>
+            <div class="row" style="margin-top:20px" >
+                <button type="button" class="btn btn-success" onclick="alert('Not implemented')"> New </button>
+                <button type="button" class="btn btn-warning" onclick="Graph.resetGraph()"> Reset </button>
+                <button type="button" class="btn btn-info" onclick="Graph.exportGraph()"> Export </button>
+                <button type="button" class="btn btn-success zoom_btn" id="zoom_in"> Zoom In </button>
+                <button type="button" class="btn btn-success zoom_btn" id="zoom_out"> Zoom Out </button>
             </div>
             <div class="row" style="margin-top:10px">
+                <div class="dropdown">
+                    <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenu2" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                        Settings
+                        <span class="caret"></span>
+                    </button>
+                    <label class="upload btn btn-primary">
+                        <input type="file" onchange="Graph.uploadPic()" class="background_pic">
+                        Upload Picture
+                    </label>
+                    <button type="button" class="btn btn-primary zoom_plus" onclick="Graph.zoomBackground(5/4)">
+                        +
+                    </button>
+                    <button type="button" class="btn btn-primary zoom_minus" onclick="Graph.zoomBackground(4/5)">
+                        -
+                    </button>
+                    <ul class="dropdown-menu" aria-labelledby="dropdownMenu2">
+                        <li>
+                            <div style="margin-left: 15px; margin-right: 15px">
+                                <div class="row">
+                                    <div class="col-lg-1">
+                                        <button type="button" class="btn btn-warning" onclick="Graph.createSeatsLine(10)">Create Set of 10 Seats (Vertical)</button>
+                                    </div>
+                                </div>
+                                <div class="form-inline" style="margin-top:10px">
+                                    <div class="form-group">
+                                        <input class="form-control" type="number" id="col-qty-clr" placeholder="Input row qty" />
+                                        <select class="form-control" id="categories_selection_app"></select>
+                                    </div>
+                                    <button type="button" class="btn btn-success" onclick="createColoredElementsRow()">Create</button>
+                                </div>
+                                <div class="form-inline" style="margin-top:10px">
+                                    <div class="form-group">
+                                        <input class="form-control" type="number" id="col-qty" placeholder="Input row qty" />
+                                    </div>
+                                    <button type="button" class="btn btn-success" onclick="createElementsRow()">Create</button>
+                                </div>
+                                <div class="form-inline" style="margin-top:10px">
+                                    <div class="form-group">
+                                        <input class="form-control" type="number" id="col-qty-with-numbering" placeholder="Input row qty" />
+                                    </div>
+                                    <div class="form-group">
+                                        <input class="form-control" type="number" id="col-qty-with-numbering-start-from" placeholder="Start numering from" />
+                                    </div>
+                                    <button type="button" class="btn btn-success" onclick="createElementsRowWithNumberStaringFrom()">Create</button>
+                                </div>
+                                <div class="form-inline" style="margin-top:10px">
+                                    <div class="form-group">
+                                        <input class="form-control" type="number" id="nat-col-qty-with-numbering" placeholder="Input row qty" />
+                                    </div>
+                                    <div class="form-group">
+                                        <input class="form-control" type="number" id="col-qty-with-numbering-columns" placeholder="Input cols qty" />
+                                    </div>
+                                    <div class="form-group">
+                                        <input class="form-control" type="number" id="nat-col-qty-with-numbering-start-from" placeholder="Start numering from" />
+                                    </div>
+                                    <div class="form-group">
+                                        <input class="form-control" type="number" id="col-qty-with-numbering-rotation" placeholder="Input rotation" />
+                                    </div>
+                                    <div class="form-group">
+                                        <input class="form-control" type="number" id="col-qty-with-numbering-radius" placeholder="Input radius" />
+                                    </div>
+                                    <button type="button"class="btn btn-success" onclick="createElementsRowWithRadius()">Create</button>
+                                </div>
+                            </div>
+
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="row" style="margin-top:10px">
+                <div>
+                    <span>Choose the item type</span>
+                    <div class="alert alert-info item_examples">
+                        <div class="radio radio_rect">
+                            <label>
+                                <input type="radio" name="itemType" id="rect" value="rect" checked>
+                            </label>
+                        </div>
+                        <div class="radio radio_circle">
+                            <label>
+                                <input type="radio" name="itemType" id="circle" value="circle">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row" style="margin-top:-10px">
                 <div>
                     <span>Elements count by color</span>
                     <div class="alert alert-info" role="alert" id="shapes_calculations_tickets_app"></div>
                 </div>
             </div>
         </div>
-        <div id="graph"></div>
+        <div id="graph">
+            <div id="fon-size"><img alt="" src=""/></div>
+            <div class="graph_container">
+            </div>
+            <div class="tool_container">
+            </div>
+        </div>
         <input type="hidden" id="graphData" name="graphData" />
         <input type="hidden" id="getData" name="getData" value='<?php echo $post->post_content ?>'/>
         <script>
+
             var config = {
-                dataProvider: 'serverData',
+                dataProvider: 'fakeData',
                 margin: { top: 100, right: 120, bottom: 100, left: 120 },
                 width: '100%',
                 height: '960',
                 duration: '1000',
+                graphContainer: '.graph_container',
+                toolContainer: '.tool_container',
                 dataContainer: '#graphData',
                 getDataContainer: "#getData",
                 graphIdContainer: "post_ID"
@@ -209,14 +279,68 @@ if( ! function_exists( 'map_create_post_type' ) ) :
 
             Graph.draw(config);
 
-            console.log(Graph.getCategoriesInfo());
+            var popoverOptions = {
+                'html': true,
+                'title': 'Select currency',
+                'content': function () {
+                    return jQuery('#popover-contents-section').html();
+                },
+                'trigger': 'click'
+            };
+            jQuery('#price_type_app_btn').popover(popoverOptions);
+
+            jQuery('#category_color').colorpicker();
+
+            jQuery(document).on('click', '#currency_change_triggered', function () {
+                var priceBtn = jQuery('#price_type_app_btn');
+                priceBtn.text(jQuery('#currency_value').val());
+                priceBtn.popover('hide');
+            });
+
+            jQuery(document).on('click', '#create_category_app_btn', function () {
+                var category = {
+                    name: jQuery('#category_name').val(),
+                    color: jQuery('#category_color').val(),
+                    price: jQuery('#category_price').val()
+                };
+                var currency = jQuery('#price_type_app_btn').text();
+                Graph.addCategory(category, currency);
+                jQuery('.add-category-modal-sm').modal('hide');
+                var el = jQuery('#categories_selection_app');
+                createCategoriesList();
+            });
+
+            jQuery(document).on('click', '#categories_selection_app', function (e) {
+                e.stopPropagation();
+            });
+
+            jQuery(document).ready(function () {
+                createCategoriesList();
+            });
+
+            function createCategoriesList () {
+                var el = jQuery('#categories_selection_app');
+                Graph.getCategoriesList().then(function(categoriesList){
+                    _.each(categoriesList, function (category) {
+                        el.append('<option>'+category.name+'</option>')
+                    });
+                });
+            }
 
             function createElementsRow () {
                 Graph.createSeatsLine(jQuery('#col-qty').val());
             }
 
+            function createColoredElementsRow() {
+                Graph.createSeatsLine(jQuery('#col-qty-clr').val(), 1, jQuery("#categories_selection_app option:selected").text());
+            }
+
             function createElementsRowWithNumberStaringFrom() {
                 Graph.createSeatsLine(jQuery('#col-qty-with-numbering').val(), jQuery('#col-qty-with-numbering-start-from').val());
+            }
+
+            function createElementsRowWithRadius() {
+                Graph.natCreateSeatsLine(jQuery('#nat-col-qty-with-numbering').val(), jQuery('#col-qty-with-numbering-columns').val(), jQuery('#nat-col-qty-with-numbering-start-from').val(), jQuery('#col-qty-with-numbering-rotation').val(), jQuery('#col-qty-with-numbering-radius').val());
             }
         </script>
         <?php

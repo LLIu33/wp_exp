@@ -32,3 +32,66 @@ svg *::-moz-selection {
 svg *::-webkit-selection {
     background:transparent;
 }
+
+#graph {
+    /*overflow: hidden;*/
+    position: relative;
+    margin-bottom: 30px;
+    margin-left: 20px;
+}
+
+.graph_container, .tool_container {
+    position: absolute;
+    /*left: 50%;*/
+    top: 0;
+}
+
+.tool_container {
+    right: 0;
+}
+
+svg {
+    position: relative;
+/*    left: -50%; 
+*/}
+
+#fon-size {
+    direction: rtl;
+}
+
+.upload_pic {
+    margin-top:20px;
+}
+
+.zoom_plus, .zoom_minus {
+    display: none;
+    width: 35px;
+}
+
+.upload {
+    width: 120px;
+    display: inline-block;
+    cursor: pointer;
+}
+
+.upload input {
+    display: none;
+}
+
+div.radio {
+    display: inline-block;
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+#price_type_app_btn {
+    cursor: pointer;
+}
+
+div.radio_circle svg {
+    margin-left: 10px;
+}
+
+.alert.alert-info.item_examples {
+    padding-bottom: 5px;
+}
