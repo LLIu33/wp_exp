@@ -23,14 +23,14 @@ jQuery( document ).ready(function($) {
     mapSelect.change(function(){
         //rerender hint for tickets
         currentMapId = $(this).val();
-        
+        console.log(_.where(mapList, {id: currentMapId}));
     });
 
     function generateHint(categories) {
-        var el = $('<p></p>');
-        el.append('Your map contain next categories:<br />');
-        categories.forEach(function(category, i) {
-          el.append('<b></b>');
+        var el = $('<p>Your map contain next categories:<br /></p>');
+        categories.forEach(function(category) {
+          el.append('<b>'+ category.name + '/' + category.color + '/' + category.price + '</b>');
         });
+        return el;
     }
 });
