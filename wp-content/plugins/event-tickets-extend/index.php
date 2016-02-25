@@ -91,11 +91,13 @@ class Tribe__Tickets__Main__Extend {
     }
 
     public function init() {
+        $this->getEventData();
         // $this->register_resources();
         // $this->register_post_types();
     }
 
     public function hooks() {
+        add_action( 'admin_enqueue_scripts', array( $this, 'events_my_enqueue') );
         add_action( 'wp_insert_post', array( $this, 'prepeare_insert_post' ), 10, 3 );
         add_filter( 'manage_tribe_events_page_tickets-attendees_columns', array( $this, 'add_my_custom_attendee_column'), 20 );
         add_filter( 'tribe_events_tickets_attendees_table_column', array( $this,'populate_my_custom_attendee_column'), 10, 3 );
@@ -105,15 +107,71 @@ class Tribe__Tickets__Main__Extend {
         add_action( 'tribe_after_location_details', array( $this, 'displayEventMapDropdown' ) );
 
         // add_filter('tribe_events_meta_box_template', array($this, 'change_event_mb_tpl'));
+        // add_filter('tribe_events_tickets_modules', array($this, 'change_event_mb_tpl'));
     }
 
+    public function getEventData() {
+        $this->my_maps = $this->get_post_info(
+            'map_seats',
+            null,
+            array(
+                'post_status' => array(
+                    'publish',
+                    'draft',
+                    'private',
+                    'pending',
+                )
+            )
+        );
+
+        foreach ($this->my_maps as &$map_item) {
+            $map_item->venue_id = get_post_meta($map_item->ID, '_map_venue_id', true);
+        }
+        unset($map_item); 
+
+        $this->my_venues = $this->get_post_info(
+            'tribe_venue',
+            null,
+            array(
+                'post_status' => array(
+                    'publish',
+                    'draft',
+                    'private',
+                    'pending',
+                )
+            )
+        );
+
+    }
+
+    function events_my_enqueue($hook) {
+        global $post_type;
+        if ( 'tribe_events' != $post_type || ('post-new.php' != $hook && 'post.php' != $hook ) ) {
+            return;
+        }
+
+        wp_enqueue_script( 'event_tickets_extend_js', plugin_dir_url( __FILE__ ) . '/js/main.js', array('jquery') );
+        wp_localize_script( 
+            'event_tickets_extend_js', 
+            'event_data', 
+            array( 
+                'maps' => $this->my_maps,
+                'venues' => $this->my_venues
+            ) 
+        );
+
+    }
 
     // public function change_event_mb_tpl($tpl) {
+    //     var_dump($tpl);die;
     //     return $this->plugin_path . '/events-meta-box.php';
     // }
 
     public function displayEventMapDropdown( $post_id ) {
-        $map_id = get_post_meta( $post_id, '_EventMapID', true );
+        $map_id = get_post_meta( $post_id, '_map_id', true );
+
+        $map = get_post($map_id);
+        $map_data = $map->post_content;
         ?>
         <table>
             <tbody>
@@ -123,12 +181,12 @@ class Tribe__Tickets__Main__Extend {
                         <?php
                         $this->saved_map_dropdown( $map_id );
                         ?>
-                        <div class="edit-map-link" <?php if ( empty( $map_id ) ) { ?>style="display:none;"<?php } ?>>
+                        <div class="edit-venue-link" <?php if ( empty( $map_id ) ) { ?>style="display:none;"<?php } ?>>
                             <a 
                                 data-admin-url="<?php echo esc_url( admin_url( 'post.php?action=edit&post=' ) ); ?>" 
                                 href="<?php echo esc_url( admin_url( sprintf( 'post.php?action=edit&post=%s', $map_id ) ) ); ?>" 
                                 target="_blank"
-                            ><?php echo esc_html( sprintf( __( 'Edit %s', 'the-events-calendar' ), $this->singular_map_label ) ); ?>
+                            ><?php echo esc_html( sprintf( __( 'Edit map%s', 'the-events-calendar' ), $this->singular_map_label ) ); ?>
                             </a>
                         </div>
                     </td>
@@ -141,24 +199,12 @@ class Tribe__Tickets__Main__Extend {
     public function saved_map_dropdown( $current = null, $name = 'map[MapID]' ) {
         global $post;
         $my_map_ids     = array();
-        $current_user     = wp_get_current_user();
         $my_maps        = false;
         $my_map_options = '';
 
         $selected_map_id = get_post_meta($post->ID, '_map_id', true);
 
-        $my_maps = $this->get_map_info(
-            null,
-            array(
-                'post_status' => array(
-                    'publish',
-                    'draft',
-                    'private',
-                    'pending',
-                ),
-                'author' => $current_user->ID,
-            )
-        );
+        $my_maps = $this->my_maps;
 
         if ( ! empty( $my_maps ) ) {
             foreach ( $my_maps as $my_map ) {
@@ -179,9 +225,9 @@ class Tribe__Tickets__Main__Extend {
         }
     }
 
-    function get_map_info( $p = null, $args = array() ) {
+    function get_post_info($post_type, $p = null, $args = array() ) {
         $defaults = array(
-            'post_type'            => 'map_seats',
+            'post_type'            => $post_type, //'map_seats','tribe_venue'
             'nopaging'             => 1,
             'post_status'          => 'publish',
             'ignore_sticky_posts ' => 1,

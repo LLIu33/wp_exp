@@ -43,11 +43,11 @@ add_action( 'admin_enqueue_scripts', 'my_enqueue' );
 add_filter( 'wp_insert_post_data' , 'filter_post_data' , '99', 2 );
 // add_action( 'init', 'post_listing_page' );
 
-function post_listing_page($data) {
-    global $post_type;
-    global $pagenow;
-    var_dump($pagenow);die;
-}
+// function post_listing_page($data) {
+//     global $post_type;
+//     global $pagenow;
+//     var_dump($pagenow);die;
+// }
 
 function filter_post_data( $data , $postarr ) {
     // Change post title
@@ -108,7 +108,6 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         $selected_venue_id = get_post_meta($post->ID, '_map_venue_id', true);
 
         $my_venue_ids     = array();
-        $current_user     = wp_get_current_user();
         $my_venues        = false;
         $my_venue_options = '';
 
@@ -209,6 +208,8 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             var Graph = new App();
 
             Graph.draw(config);
+
+            console.log(Graph.getCategoriesInfo());
 
             function createElementsRow () {
                 Graph.createSeatsLine(jQuery('#col-qty').val());
