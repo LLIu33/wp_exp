@@ -14,14 +14,20 @@ jQuery( document ).ready(function($) {
 
     
     var currentVenueId = venueSelect.val();
+    var mapList =  _.where(event_data.maps, {venue_id: currentVenueId});
+
     var currentMapId = event_data['selected_map'];
     var currentMapObj;
 
     if (!currentMapId) {
         mapEditButton.hide();
+    } else {
+        currentMapObj = getMapData(currentMapId, mapList);
+        if (currentMapObj.data && currentMapObj.data.categories && currentMapObj.data.categories.length > 0) {
+            generateHint(currentMapObj.data.categories);
+        }
     }
 
-    var mapList =  _.where(event_data.maps, {venue_id: currentVenueId});
 
     populateMapSelect(mapList);
 
@@ -37,20 +43,31 @@ jQuery( document ).ready(function($) {
         //rerender hint for tickets
         currentMapId = $(this).val();
         mapEditButton.attr('href', defaultMapUrl + currentMapId ).show();
+        $('#hintForTickets').remove();
 
-        currentMapObj = _.filter(mapList, function(item) {
-            return  (item.ID == currentMapId);
-        })[0];
-        currentMapObj.post_content = JSON.parse(currentMapObj.post_content);
-        if (currentMapObj.post_content.categoies && currentMapObj.post_content.categoies.length > 0) {
-            generateHint(currentMapObj.post_content.categoies);
+        currentMapObj = getMapData(currentMapId, mapList);
+        if (currentMapObj.data && currentMapObj.data.categories && currentMapObj.data.categories.length > 0) {
+            generateHint(currentMapObj.data.categories);
         }
     });
 
+    function getMapData(id, list) {
+        filtredMapList = _.filter(list, function(item) {
+            return  (item.ID == id);
+        });
+        var result;
+        if (filtredMapList.length > 0) {
+            result = filtredMapList[0];
+            result.data = JSON.parse(result.post_content);
+        }
+        return result;
+    }
+
     function generateHint(categories) {
-        var el = $('<p>Your map contain next categories:<br /></p>');
-        categories.forEach(function(category) {
-            el.append('<b>'+ category.name + '/' + category.color + '/' + category.price + '</b>');
+        var el = $('<p id="hintForTickets">Your map contain next categories:<br /></p>')
+        el.append('<b>#. Name / Color / <i> Price </i></b><br />');
+        categories.forEach(function(category, i) {
+            el.append((i+1) + '. '+ category.name + ' / #' + category.color + ' / <i>' + category.price + '</i><br />');
         });
         $('#ticket_form').before(el);
     }

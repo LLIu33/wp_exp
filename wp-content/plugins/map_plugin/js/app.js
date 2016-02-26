@@ -301,6 +301,10 @@ function App() {}
             .on("touchstart.zoom", null)
             .on("touchmove.zoom", null)
             .on("touchend.zoom", null)
+            .on("dblclick.zoom", null)
+            .on("wheel.zoom", null)
+            .on("mousewheel.zoom", null)
+            .on("MozMousePixelScroll.zoom", null)
             .append('g')
             .attr("transform", "translate(" + (jQuery('svg').width() / 4) + "," + this.margin.top * 2 + ")");
 
@@ -365,7 +369,7 @@ function App() {}
         });
     };
     App.prototype._createShapes = function (data, grouped, rotation) {
-        if (!data) return;
+        if ( ! data ) return;
         var i = 0;
         var rotation = -1 * rotation || 0;
         if ( ! _.isUndefined (grouped)) {
@@ -464,9 +468,6 @@ function App() {}
             .attr("class", "inner");
         };
     App.prototype.zoomed = function () {
-        if ( d3.event && d3.event.sourceEvent.type === 'wheel') {
-            return;
-        }
         self.graph.attr("transform",
             "translate(" + self.zoom.translate() + ")" +
             "scale(" + self.zoom.scale() + ")"
@@ -490,7 +491,7 @@ function App() {}
             direction = 1,
             factor = 0.2,
             target_zoom = 1,
-            center = [self.width / 2, self.height / 2],
+            center = [jQuery('.graph_container').width() / 2, jQuery('.graph_container').height() / 2],
             extent = self.zoom.scaleExtent(),
             translate = self.zoom.translate(),
             translate0 = [],
@@ -907,7 +908,7 @@ function App() {}
             if(data) {
                 this.resolve(JSON.parse(data));
             }
-            this.resolve({grapData:[], categories: []});
+            this.resolve({ graphData:[], categories: []});
         });
     };
     App.prototype.getData = function () {
