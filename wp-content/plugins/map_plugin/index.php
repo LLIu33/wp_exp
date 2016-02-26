@@ -9,6 +9,7 @@ Author: Artem G.
 Author URI: http://
 */
 
+
 function my_enqueue($hook) {
     global $post_type;
 
@@ -41,19 +42,14 @@ function my_enqueue($hook) {
     wp_enqueue_style( 'bootstrap_theme_min_css' );
     wp_enqueue_style( 'custom_wp_admin_css' );
 }
+
 add_action( 'admin_enqueue_scripts', 'my_enqueue' );
 add_filter( 'wp_insert_post_data' , 'filter_post_data' , '99', 2 );
-// add_action( 'init', 'post_listing_page' );
-
-// function post_listing_page($data) {
-//     global $post_type;
-//     global $pagenow;
-//     var_dump($pagenow);die;
-// }
 
 function filter_post_data( $data , $postarr ) {
-    // Change post title
-    $data['post_content'] = $postarr['graphData'];
+    if (($postarr['post_type'] == 'map_seats') && ($postarr['post_status'] != 'auto-draft')) {
+        $data['post_content'] = (string) $postarr['graphData'];
+    }
     return $data;
 }
 
@@ -137,10 +133,10 @@ if( ! function_exists( 'map_create_post_type' ) ) :
 
         if ( $my_venues ) {
             // $venue_pto = get_post_type_object('tribe_venue');
-            echo '<label for="saved_venue"><b>Choose venue:</b></label> <br />';
-            echo '<select class="chosen venue-dropdown" name="' . esc_attr( 'venue_id' ) . '" id="saved_venue">';
+            echo '<label style="min-width:150px;" for="saved_venue"><b>Choose venue:</b></label>';
+            echo '<select class="chosen venue-dropdown" style="min-width:150px;" name="' . esc_attr( 'venue_id' ) . '" id="saved_venue">';
             echo $my_venue_options;
-            echo '</select>';
+            echo '</select><br />';
         } else {
             echo '<p class="nosaved">' . esc_html__( 'No saved %s exists.') . '</p>';
         }
@@ -150,7 +146,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
                 display: none;
             }
         </style>
-        <div class="container">
+        <div class="container" style="display: inline-block;">
             <div class="row" style="margin-top:20px" >
                 <button type="button" class="btn btn-success" onclick="alert('Not implemented')"> New </button>
                 <button type="button" class="btn btn-warning" onclick="Graph.resetGraph()"> Reset </button>
@@ -264,7 +260,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         <script>
 
             var config = {
-                dataProvider: 'fakeData',
+                dataProvider: 'serverData',
                 margin: { top: 100, right: 120, bottom: 100, left: 120 },
                 width: '100%',
                 height: '960',
@@ -445,65 +441,65 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         }
     }
     add_action( 'save_post', 'map_post_save_meta', 1, 2 ); // save the custom fields
-endif; // end of function_exists()
+endif;
+
+
+// if( ! function_exists( 'view_maps_posts' ) ) :
+//     function view_maps_posts($do_shortcode = 1, $strip_shortcodes = 0 ) {
+ 
+//         $args = array(
+//             'posts_per_page'     => 100,
+//             'offset'          => 0,
+//             //'category'        => ,
+//             'orderby'         => 'menu_order, post_title', // post_date, rand
+//             'order'           => 'DESC',
+//             'post_type'       => 'map_seats',
+//             'post_status'     => 'publish',
+//             'suppress_filters' => true
+//         );
+ 
+//         $posts = get_posts( $args );
+ 
+//         $html = '';
+//         foreach ( $posts as $post ) {
+//             // $meta_name = get_post_meta( $post->ID, '_map_post_name', true );
+//             // $meta_desc = get_post_meta( $post->ID, '_map_post_desc', true );
+//             $meta_venue = get_post_meta( $post->ID, '_map_venue_id', true );
+//             // $img = get_the_post_thumbnail( $post->ID, 'medium' );
+//             // if( empty( $img ) ) {
+//             //     $img = '<img src="'.plugins_url( '/img/default.png', __FILE__ ).'">';
+//             // }
  
  
-if( ! function_exists( 'view_maps_posts' ) ) : // output
-    function view_maps_posts($do_shortcode = 1, $strip_shortcodes = 0 ) {
+//             // if( has_post_thumbnail( $post->ID ) ) {
+//             //     $img = wp_get_attachment_image_src( get_post_thumbnail_id( $post->ID ), 'thumbnail' );
+//             //     $img_url = $img[0];
  
-        $args = array(
-            'posts_per_page'     => 100,
-            'offset'          => 0,
-            //'category'        => ,
-            'orderby'         => 'menu_order, post_title', // post_date, rand
-            'order'           => 'DESC',
-            'post_type'       => 'map_seats',
-            'post_status'     => 'publish',
-            'suppress_filters' => true
-        );
+//             //     //the_post_thumbnail( 'thumbnail' ); /* thumbnail, medium, large, full, thumb-100, thumb-200, thumb-400, array(100,100) */
+//             // }
  
-        $posts = get_posts( $args );
+//             $content = $post->post_content;
+//             if( $do_shortcode == 1 ) {
+//                 $content = do_shortcode( $content );
+//             }
+//             if( $strip_shortcodes == 1 ) {
+//                 $content = strip_shortcodes( $content );
+//             }
+//             $content = wp_trim_words( $content, 30, '...');
+//             $content = wpautop( $content );
  
-        $html = '';
-        foreach ( $posts as $post ) {
-            // $meta_name = get_post_meta( $post->ID, '_map_post_name', true );
-            // $meta_desc = get_post_meta( $post->ID, '_map_post_desc', true );
-            $meta_venue = get_post_meta( $post->ID, '_map_venue_id', true );
-            // $img = get_the_post_thumbnail( $post->ID, 'medium' );
-            // if( empty( $img ) ) {
-            //     $img = '<img src="'.plugins_url( '/img/default.png', __FILE__ ).'">';
-            // }
- 
- 
-            // if( has_post_thumbnail( $post->ID ) ) {
-            //     $img = wp_get_attachment_image_src( get_post_thumbnail_id( $post->ID ), 'thumbnail' );
-            //     $img_url = $img[0];
- 
-            //     //the_post_thumbnail( 'thumbnail' ); /* thumbnail, medium, large, full, thumb-100, thumb-200, thumb-400, array(100,100) */
-            // }
- 
-            $content = $post->post_content;
-            if( $do_shortcode == 1 ) {
-                $content = do_shortcode( $content );
-            }
-            if( $strip_shortcodes == 1 ) {
-                $content = strip_shortcodes( $content );
-            }
-            $content = wp_trim_words( $content, 30, '...');
-            $content = wpautop( $content );
- 
-            $html .= '
-            <div>
-                <h3>'.$post->post_title.'</h3>
-                <div>
-                    <p>Venue_id: '.$meta_venue.'</p>
-                </div>
-                <div>'.$content.'</div>
-            </div>
-            ';
-        }
-        $html = '<div class="wrapper">'.$html.'</div>';
-        return $html;
-    }
-endif; // end of function_exists()
+//             $html .= '
+//             <div>
+//                 <h3>'.$post->post_title.'</h3>
+//                 <div>
+//                     <p>Venue_id: '.$meta_venue.'</p>
+//                 </div>
+//                 <div>'.$content.'</div>
+//             </div>
+//             ';
+//         }
+//         $html = '<div class="wrapper">'.$html.'</div>';
+//         return $html;
+//     }
+// endif;
 ?>
