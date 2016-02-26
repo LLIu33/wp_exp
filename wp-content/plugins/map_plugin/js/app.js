@@ -310,7 +310,7 @@ function App() {}
 
         this.toolSvg = d3.select(this.toolContainer)
             .append("svg")
-            .attr("transform", "translate(" + (jQuery('svg').width()) + "," + 0 + ")")
+            .attr("transform", "translate(" + 0 + "," + 0 + ")")
             .attr("style", "border:2px solid black;")
             .attr("width", this.toolSvgWidth)
             .attr("height", this.toolSvgHeight)
@@ -715,7 +715,7 @@ function App() {}
                 return d.h + (d.h/10) * self.categories.length;
             })
             .attr("fill", 'white')
-            .attr("stroke", "gray");
+            /*.attr("stroke", "gray")*/;
 
         element
             .append("text")
