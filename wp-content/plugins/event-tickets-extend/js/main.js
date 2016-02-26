@@ -18,16 +18,17 @@ jQuery( document ).ready(function($) {
 
     var currentMapId = event_data['selected_map'];
     var currentMapObj;
+    var isExistMap = checkExistMap(currentMapId, mapList);
 
-    if (!currentMapId) {
+
+    if (!currentMapId || !isExistMap) {
         mapEditButton.hide();
     } else {
         currentMapObj = getMapData(currentMapId, mapList);
-        if (currentMapObj.data && currentMapObj.data.categories && currentMapObj.data.categories.length > 0) {
+        if (currentMapObj && currentMapObj.data && currentMapObj.data.categories && currentMapObj.data.categories.length > 0) {
             generateHint(currentMapObj.data.categories);
         }
     }
-
 
     populateMapSelect(mapList);
 
@@ -40,16 +41,23 @@ jQuery( document ).ready(function($) {
     });
 
     mapSelect.change(function(){
-        //rerender hint for tickets
         currentMapId = $(this).val();
         mapEditButton.attr('href', defaultMapUrl + currentMapId ).show();
+        if (currentMapId == '') mapEditButton.hide();
         $('#hintForTickets').remove();
 
         currentMapObj = getMapData(currentMapId, mapList);
-        if (currentMapObj.data && currentMapObj.data.categories && currentMapObj.data.categories.length > 0) {
+        if (currentMapObj && currentMapObj.data && currentMapObj.data.categories && currentMapObj.data.categories.length > 0) {
             generateHint(currentMapObj.data.categories);
         }
     });
+
+    function checkExistMap(id, list) {
+        var arr = _.filter(list, function(item) {
+            return  (item.ID == id);
+        });
+        return (arr.length > 0) ? true : false;
+    }
 
     function getMapData(id, list) {
         filtredMapList = _.filter(list, function(item) {
