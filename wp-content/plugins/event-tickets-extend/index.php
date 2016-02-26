@@ -124,7 +124,7 @@ class Tribe__Tickets__Main__Extend {
             )
         );
 
-        $this->selected_map_id = get_post_meta($post->ID, '_map_id', true);
+        $this->selected_map_id = get_post_meta($_GET['post'], '_map_id', true);
 
         if ($this->my_maps) {
             foreach ($this->my_maps as &$map_item) {
