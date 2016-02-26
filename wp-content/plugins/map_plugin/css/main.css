@@ -95,3 +95,29 @@ div.radio_circle svg {
 .alert.alert-info.item_examples {
     padding-bottom: 5px;
 }
+
+.color_box {
+    width: 15px;
+    height: 15px;
+}
+
+.color_examples {
+    text-align: center;
+}
+
+.color_examples>div:first-child {
+    float: left;
+}
+
+.color_examples>div:last-child {
+    float: right;
+}
+
+#hex_value {
+    height: 30px;
+    margin: 10px 0;
+}
+
+.color_examples table {
+    width: 100%;
+}

@@ -908,7 +908,7 @@ function App() {}
             if(data) {
                 this.resolve(JSON.parse(data));
             }
-            this.resolve({ graphData:[], categories: []});
+            this.resolve({ graphData: [], categories: [] });
         });
     };
     App.prototype.getData = function () {
