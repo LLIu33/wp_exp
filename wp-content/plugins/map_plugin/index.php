@@ -37,9 +37,13 @@ function my_enqueue($hook) {
     wp_register_style( 'bootstrap_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap.min.css', false, '1.0.0' );
     wp_register_style( 'bootstrap_theme_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap-theme.min.css', false, '1.0.0' );
     wp_register_style( 'custom_wp_admin_css', plugin_dir_url( __FILE__ ) . '/css/main.css', false, '1.0.0' );
+    wp_register_style( 'jquery_ui_min_css', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/themes/ui-lightness/jquery-ui.css', false, '1.0.0' );
+    wp_register_style( 'colorpicker_min_css', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.css', false, '1.0.0' );
 
     wp_enqueue_style( 'bootstrap_min_css' );
     wp_enqueue_style( 'bootstrap_theme_min_css' );
+    wp_enqueue_style( 'jquery_ui_min_css' );
+    wp_enqueue_style( 'colorpicker_min_css' );
     wp_enqueue_style( 'custom_wp_admin_css' );
 }
 
@@ -146,7 +150,8 @@ if( ! function_exists( 'map_create_post_type' ) ) :
                 display: none;
             }
         </style>
-        <div class="container" style="display: inline-block;">
+        <div style="position:relative">
+        <div class="container" style="display:inline-block;">
             <div class="row" style="margin-top:20px" >
                 <button type="button" class="btn btn-success" onclick="alert('Not implemented')"> New </button>
                 <button type="button" class="btn btn-warning" onclick="Graph.resetGraph()"> Reset </button>
@@ -256,7 +261,49 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             </div>
         </div>
         <input type="hidden" id="graphData" name="graphData" />
-        <input type="hidden" id="getData" name="getData" value='<?php echo $post->post_content ?>'/>
+        <input type="hidden" id="getData" name="getData"  value='<?php echo $post->post_content ?>'/>
+
+        <div class="modal fade add-category-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <h4 class="modal-header"> Create category </h4>
+                    <div class="modal-body">
+                        <div class="form-inline text-center">
+                            <div class="form-group">
+                                <div class="input-group">
+                                    <div class="input-group-addon" id="name_type_app_btn">N</div>
+                                    <input class="form-control" type="text" id="category_name" placeholder="Name" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="input-group">
+                                    <div class="input-group-addon" id="color_type_app_btn">C</div>
+                                    <input class="form-control" type="text" id="category_color" placeholder="Color (hex)" />
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <div class="input-group">
+                                    <div class="input-group-addon" id="price_type_app_btn">$</div>
+                                    <input class="form-control" type="number" id="category_price" placeholder="Price" step="any" min="0"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" id="create_category_app_btn">Create</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hidden" id="popover-contents-section">
+            <div class="form-inline">
+                <div class="form-group">
+                    <input class="form-control" type="text" id="currency_value" placeholder="Input currency"/>
+                </div>
+                <button type="button" id="currency_change_triggered" class="btn btn-default">Ok</button>
+            </div>
+        </div>
+        </div>
         <script>
 
             var config = {
@@ -265,6 +312,8 @@ if( ! function_exists( 'map_create_post_type' ) ) :
                 width: '100%',
                 height: '960',
                 duration: '1000',
+                toolWidth: '300',
+                toolHeight: '960',
                 graphContainer: '.graph_container',
                 toolContainer: '.tool_container',
                 dataContainer: '#graphData',
@@ -285,7 +334,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             };
             jQuery('#price_type_app_btn').popover(popoverOptions);
 
-            jQuery('#category_color').colorpicker();
+            // jQuery('#category_color').colorpicker();
 
             jQuery(document).on('click', '#currency_change_triggered', function () {
                 var priceBtn = jQuery('#price_type_app_btn');
