@@ -49,8 +49,8 @@ class Tribe__Tickets__Main__Extend {
      */
     public function __construct() {
         /* Set up some parent's vars */
-        $this->plugin_name = 'Tickets';
-        $this->plugin_slug = 'tickets';
+        $this->plugin_name = 'Tickets_extend';
+        $this->plugin_slug = 'tickets_extend';
         $this->plugin_path = trailingslashit( EVENT_TICKETS_EXTEND_DIR );
         $this->plugin_dir = trailingslashit( basename( $this->plugin_path ) );
 
@@ -61,8 +61,6 @@ class Tribe__Tickets__Main__Extend {
         }
 
         $this->plugin_url = trailingslashit( plugins_url( $dir_prefix . $this->plugin_dir ) );
-
-        // add_action('admin_menu', array( $this, 'create_menu_page' ));
 
         add_action( 'plugins_loaded', array( $this, 'plugins_loaded' ), 0 );
     }
@@ -108,7 +106,51 @@ class Tribe__Tickets__Main__Extend {
 
         // add_filter('tribe_events_meta_box_template', array($this, 'change_event_mb_tpl'));
         // add_filter('tribe_events_tickets_modules', array($this, 'change_event_mb_tpl'));
+
+        add_action( 'tribe_events_single_meta_venue_section_end', array( $this,'show_wp_custom_fields'));
+        add_action( 'wp_enqueue_scripts', array($this, 'my_enqueue') );
     }
+
+function my_enqueue() {
+    global $post_type;
+
+    if ( 'tribe_events' != $post_type ) {
+        return;
+    }
+
+    // comment out the next two lines to load the local copy of jQuery
+    wp_deregister_script('jquery');
+    wp_register_script('jquery', 'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js', false, '2.2.1');
+    wp_enqueue_script('jquery');
+
+    // comment out the next two lines to load the local copy of Underscore
+    wp_deregister_script('underscore');
+    wp_register_script('underscore', 'https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js', false, '1.8.3');
+    wp_enqueue_script('underscore');
+
+    wp_enqueue_script( 'bootstrap.min.js', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/js/bootstrap.min.js' );
+    wp_enqueue_script( 'd3.min.js', plugin_dir_url( __FILE__ ) . '/vendor/d3/d3.min.js');
+    wp_enqueue_script( 'd3-transform.js', plugin_dir_url( __FILE__ ) . '/vendor/d3-transform/src/d3-transform.js' );
+    wp_enqueue_script( 'jquery-ui.min.js', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/jquery-ui.min.js' );
+    wp_enqueue_script( 'jquery.colorpicker.js', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.js' );
+    wp_enqueue_script( 'map_seats_app', plugin_dir_url( __FILE__ ) . '/js/app.js', array('jquery') );
+
+    wp_register_style( 'bootstrap_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap.min.css', false, '1.0.0' );
+    wp_register_style( 'bootstrap_theme_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap-theme.min.css', false, '1.0.0' );
+    wp_register_style( 'custom_wp_admin_css', plugin_dir_url( __FILE__ ) . '/css/main.css', false, '1.0.0' );
+    wp_register_style( 'jquery_ui_min_css', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/themes/ui-lightness/jquery-ui.css', false, '1.0.0' );
+    wp_register_style( 'colorpicker_min_css', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.css', false, '1.0.0' );
+
+    wp_enqueue_style( 'bootstrap_min_css' );
+    wp_enqueue_style( 'bootstrap_theme_min_css' );
+    wp_enqueue_style( 'jquery_ui_min_css' );
+    wp_enqueue_style( 'colorpicker_min_css' );
+    wp_enqueue_style( 'custom_wp_admin_css' );
+}
+
+function show_wp_custom_fields() {
+    include self::instance()->plugin_path . 'map-chart.php';
+}
 
     public function getEventData() {
         $this->my_maps = $this->get_post_info(

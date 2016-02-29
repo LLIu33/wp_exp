@@ -405,14 +405,3 @@ function twentysixteen_widget_tag_cloud_args( $args ) {
 	return $args;
 }
 add_filter( 'widget_tag_cloud_args', 'twentysixteen_widget_tag_cloud_args' );
-
-
-add_action( 'tribe_events_single_meta_venue_section_end', 'show_wp_custom_fields');
-
-function show_wp_custom_fields() {
-	$eventData = get_post_meta( get_the_ID() );
-	$venueId = $eventData['_EventVenueID'][0];
-	$venueData = get_post_meta( $venueId );
-	$paramName = 'Type of seats plan';
-	echo '<span>' . esc_html( $paramName ) . ': <strong> ' . esc_html( $venueData[$paramName][0] ) . '<strong></span><br/>';
-}
