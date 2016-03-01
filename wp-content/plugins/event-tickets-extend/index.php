@@ -111,46 +111,46 @@ class Tribe__Tickets__Main__Extend {
         add_action( 'wp_enqueue_scripts', array($this, 'my_enqueue') );
     }
 
-function my_enqueue() {
-    global $post_type;
+    function my_enqueue() {
+        global $post_type;
 
-    if ( 'tribe_events' != $post_type ) {
-        return;
+        if ( 'tribe_events' != $post_type ) {
+            return;
+        }
+
+        // comment out the next two lines to load the local copy of jQuery
+        wp_deregister_script('jquery');
+        wp_register_script('jquery', 'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js', false, '2.2.1');
+        wp_enqueue_script('jquery');
+
+        // comment out the next two lines to load the local copy of Underscore
+        wp_deregister_script('underscore');
+        wp_register_script('underscore', 'https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js', false, '1.8.3');
+        wp_enqueue_script('underscore');
+
+        wp_enqueue_script( 'bootstrap.min.js', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/js/bootstrap.min.js' );
+        wp_enqueue_script( 'd3.min.js', plugin_dir_url( __FILE__ ) . '/vendor/d3/d3.min.js');
+        wp_enqueue_script( 'd3-transform.js', plugin_dir_url( __FILE__ ) . '/vendor/d3-transform/src/d3-transform.js' );
+        wp_enqueue_script( 'jquery-ui.min.js', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/jquery-ui.min.js' );
+        wp_enqueue_script( 'jquery.colorpicker.js', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.js' );
+        wp_enqueue_script( 'map_seats_app', plugin_dir_url( __FILE__ ) . '/js/app.js', array('jquery') );
+
+        wp_register_style( 'bootstrap_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap.min.css', false, '1.0.0' );
+        wp_register_style( 'bootstrap_theme_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap-theme.min.css', false, '1.0.0' );
+        wp_register_style( 'custom_wp_admin_css', plugin_dir_url( __FILE__ ) . '/css/main.css', false, '1.0.0' );
+        wp_register_style( 'jquery_ui_min_css', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/themes/ui-lightness/jquery-ui.css', false, '1.0.0' );
+        wp_register_style( 'colorpicker_min_css', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.css', false, '1.0.0' );
+
+        wp_enqueue_style( 'bootstrap_min_css' );
+        wp_enqueue_style( 'bootstrap_theme_min_css' );
+        wp_enqueue_style( 'jquery_ui_min_css' );
+        wp_enqueue_style( 'colorpicker_min_css' );
+        wp_enqueue_style( 'custom_wp_admin_css' );
     }
 
-    // comment out the next two lines to load the local copy of jQuery
-    wp_deregister_script('jquery');
-    wp_register_script('jquery', 'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js', false, '2.2.1');
-    wp_enqueue_script('jquery');
-
-    // comment out the next two lines to load the local copy of Underscore
-    wp_deregister_script('underscore');
-    wp_register_script('underscore', 'https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js', false, '1.8.3');
-    wp_enqueue_script('underscore');
-
-    wp_enqueue_script( 'bootstrap.min.js', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/js/bootstrap.min.js' );
-    wp_enqueue_script( 'd3.min.js', plugin_dir_url( __FILE__ ) . '/vendor/d3/d3.min.js');
-    wp_enqueue_script( 'd3-transform.js', plugin_dir_url( __FILE__ ) . '/vendor/d3-transform/src/d3-transform.js' );
-    wp_enqueue_script( 'jquery-ui.min.js', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/jquery-ui.min.js' );
-    wp_enqueue_script( 'jquery.colorpicker.js', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.js' );
-    wp_enqueue_script( 'map_seats_app', plugin_dir_url( __FILE__ ) . '/js/app.js', array('jquery') );
-
-    wp_register_style( 'bootstrap_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap.min.css', false, '1.0.0' );
-    wp_register_style( 'bootstrap_theme_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap-theme.min.css', false, '1.0.0' );
-    wp_register_style( 'custom_wp_admin_css', plugin_dir_url( __FILE__ ) . '/css/main.css', false, '1.0.0' );
-    wp_register_style( 'jquery_ui_min_css', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/themes/ui-lightness/jquery-ui.css', false, '1.0.0' );
-    wp_register_style( 'colorpicker_min_css', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.css', false, '1.0.0' );
-
-    wp_enqueue_style( 'bootstrap_min_css' );
-    wp_enqueue_style( 'bootstrap_theme_min_css' );
-    wp_enqueue_style( 'jquery_ui_min_css' );
-    wp_enqueue_style( 'colorpicker_min_css' );
-    wp_enqueue_style( 'custom_wp_admin_css' );
-}
-
-function show_wp_custom_fields() {
-    include self::instance()->plugin_path . 'map-chart.php';
-}
+    function show_wp_custom_fields() {
+        include self::instance()->plugin_path . 'map-chart.php';
+    }
 
     public function getEventData() {
         $this->my_maps = $this->get_post_info(
@@ -277,9 +277,9 @@ function show_wp_custom_fields() {
         );
 
         $args = wp_parse_args( $args, $defaults );
-        $r    = new WP_Query( $args );
-        if ( $r->have_posts() ) :
-            return $r->posts;
+        $response = new WP_Query( $args );
+        if ( $response->have_posts() ) :
+            return $response->posts;
         endif;
 
         return false;
