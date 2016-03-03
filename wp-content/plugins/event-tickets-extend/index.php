@@ -107,7 +107,7 @@ class Tribe__Tickets__Main__Extend {
         // add_filter('tribe_events_meta_box_template', array($this, 'change_event_mb_tpl'));
         // add_filter('tribe_events_tickets_modules', array($this, 'change_event_mb_tpl'));
 
-        add_action( 'tribe_events_single_meta_venue_section_end', array( $this,'show_wp_custom_fields'));
+        add_action( 'tribe_events_single_meta_venue_section_end', array( $this,'show_wp_map_chart'));
         add_action( 'wp_enqueue_scripts', array($this, 'my_enqueue') );
     }
 
@@ -148,7 +148,20 @@ class Tribe__Tickets__Main__Extend {
         wp_enqueue_style( 'custom_wp_admin_css' );
     }
 
-    function show_wp_custom_fields() {
+    function show_wp_map_chart() {
+        global $post;
+        $event_id = $post->ID;
+        $attendees =  get_post_info(
+            'tribe_rsvp_attendees', 
+            null, 
+            array(
+                  'meta_key' => '_tribe_rsvp_event',
+                  'meta_value' => $event_id,
+                )
+        );
+
+        var_dump($attendees);
+        die;
         include self::instance()->plugin_path . 'map-chart.php';
     }
 
