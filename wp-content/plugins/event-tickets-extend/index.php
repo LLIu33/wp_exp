@@ -289,10 +289,10 @@ class Tribe__Tickets__Main__Extend {
         // post_type
         switch ($post->post_type) {
             case 'tribe_rsvp_attendees':
-                $this->add_custom_field_to_attendees($post_id, $post, $update);
+                $this->add_custom_field_to_attendees($post_id, $post);
                 break;
             case 'tribe_events':
-                $this->add_custom_field_to_events($post_id, $post, $update);
+                $this->add_custom_field_to_events($post_id, $post);
                 break;
             // case 'map_seats':
             //     $this->add_custom_field_to_map($post_id, $post, $update);
@@ -300,12 +300,17 @@ class Tribe__Tickets__Main__Extend {
         }
     }
 
-    public function add_custom_field_to_attendees( $post_id, $post, $update ) {
-        $seats = empty( $_POST['attendee']['seats'] ) ? null : sanitize_text_field( $_POST['attendee']['seats'] );
-        update_post_meta( $post_id, 'seats', $seats);
+    public function add_custom_field_to_attendees( $post_id, $post ) {
+        $seatsStr = empty( $_POST['attendee']['seats'] ) ? null :  $_POST['attendee']['seats'];
+        $seatsArr = array_filter(explode(";", $seatsStr));
+        if(!empty($seatsArr)) {
+            update_post_meta( $post_id, 'seats', $seatsArr[0]);
+            $seatsArr = (array)array_slice($seatsArr, 1);
+            $_POST['attendee']['seats'] = implode(";", $seatsArr);
+        }
     }
 
-    public function add_custom_field_to_events( $post_id, $post, $update ) {
+    public function add_custom_field_to_events( $post_id, $post) {
         $map_id = empty( $_POST['map_id'] ) ? null : sanitize_text_field( $_POST['map_id'] );
         update_post_meta( $post_id, '_map_id', $map_id);
     }
