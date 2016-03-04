@@ -7,20 +7,20 @@ rect.selection {
     stroke-opacity  : 0.5;
     fill            : transparent;
 }
-g.point rect {
+g.point rect, g.tag rect {
     stroke  : black;
     cursor  : pointer;
 }
 /*g.point rect.inner {
     fill    : white;
 }*/
-g.point rect.outer {
+g.point rect.outer, g.tag rect.outer {
     display         : none;
     stroke-dasharray: 4px;
     stroke-opacity  : 0.5;
     fill            : transparent;
 }
-g.point.selected rect.outer {
+g.point.selected rect.outer, g.tag.selected rect.outer {
     display         : inline;
 }
 svg *::selection {

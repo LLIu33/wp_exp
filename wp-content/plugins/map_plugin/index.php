@@ -17,6 +17,13 @@ function my_enqueue($hook) {
         return;
     }
 
+    function FontAwesome_icons() {
+    echo '<link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css"  rel="stylesheet">';
+}
+
+add_action('admin_head', 'FontAwesome_icons');
+add_action('wp_head', 'FontAwesome_icons');
+
     // comment out the next two lines to load the local copy of jQuery
     wp_deregister_script('jquery');
     wp_register_script('jquery', 'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js', false, '2.2.1');
@@ -39,12 +46,14 @@ function my_enqueue($hook) {
     wp_register_style( 'custom_wp_admin_css', plugin_dir_url( __FILE__ ) . '/css/main.css', false, '1.0.0' );
     wp_register_style( 'jquery_ui_min_css', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/themes/ui-lightness/jquery-ui.css', false, '1.0.0' );
     wp_register_style( 'colorpicker_min_css', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.css', false, '1.0.0' );
+    wp_register_style( 'font_awesome_min_css', 'https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css', false, '1.0.0' );
 
     wp_enqueue_style( 'bootstrap_min_css' );
     wp_enqueue_style( 'bootstrap_theme_min_css' );
     wp_enqueue_style( 'jquery_ui_min_css' );
     wp_enqueue_style( 'colorpicker_min_css' );
     wp_enqueue_style( 'custom_wp_admin_css' );
+    wp_enqueue_style( 'font_awesome_min_css' );
 }
 
 add_action( 'admin_enqueue_scripts', 'my_enqueue' );
@@ -328,119 +337,136 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             </td>
         </script>
         <script>
-        var config = {
-            dataProvider: 'serverData',
-            margin: { top: 100, right: 120, bottom: 100, left: 120 },
-            width: '100%',
-            height: '960',
-            duration: '1000',
-            toolWidth: '300',
-            toolHeight: '960',
-            graphContainer: '.graph_container',
-            toolContainer: '.tool_container',
-            dataContainer: '#graphData',
-            getDataContainer: "#getData",
-            graphIdContainer: "post_ID"
-        };
-        var Graph = new App();
-
-        Graph.draw(config);
-
-        var popoverOptions = {
-            'html': true,
-            'title': 'Select currency',
-            'content': function () {
-                return jQuery('#popover-contents-section').html();
-            },
-            'trigger': 'click'
-        };
-        var colorPickerOptions = {
-            'html': true,
-            'title': 'Select color',
-            'content': function () {
-                return jQuery('#popover-color-picker').html();
-            },
-            'trigger': 'click'
-        };
-        jQuery('#price_type_app_btn').popover(popoverOptions);
-        jQuery('#category_color').popover(colorPickerOptions);
-
-        jQuery(document).on('click', '#currency_change_triggered', function () {
-            var priceBtn = jQuery('#price_type_app_btn');
-            priceBtn.text(jQuery('#currency_value').val());
-            priceBtn.popover('hide');
-        });
-
-        jQuery(document).on('click', '#create_category_app_btn', function () {
-            var category = {
-                name: jQuery('#category_name').val(),
-                color: jQuery('#category_color').val(),
-                price: jQuery('#category_price').val()
+            var config = {
+                dataProvider: 'serverData',
+                margin: { top: 100, right: 120, bottom: 100, left: 120 },
+                width: '100%',
+                height: '960',
+                duration: '1000',
+                toolWidth: '300',
+                toolHeight: '960',
+                graphContainer: '.graph_container',
+                toolContainer: '.tool_container',
+                dataContainer: '#graphData',
+                getDataContainer: "#getData",
+                graphIdContainer: "post_ID"
             };
-            var currency = jQuery('#price_type_app_btn').text();
-            Graph.addCategory(category, currency);
-            jQuery('.add-category-modal-sm').modal('hide');
-            var el = jQuery('#categories_selection_app');
-            createCategoriesList();
-        });
+            var Graph = new App();
 
-        jQuery(document).on('click', '#categories_selection_app', function (e) {
-            e.stopPropagation();
-        });
+            Graph.draw(config);
 
-        jQuery(document).on('click', 'input[name="color_picker"]', function (e) {
-            var color = jQuery(this).val().replace('#', '');
-            jQuery('#hex_value').val(color);
-        });
+            var popoverOptions = {
+                'html': true,
+                'title': 'Select currency',
+                'content': function () {
+                    return jQuery('#popover-contents-section').html();
+                },
+                'trigger': 'click'
+            };
+            var colorPickerOptions = {
+                'html': true,
+                'title': 'Select color',
+                'content': function () {
+                    return jQuery('#popover-color-picker').html();
+                },
+                'trigger': 'click'
+            };
+            jQuery('#price_type_app_btn').popover(popoverOptions);
+            jQuery('#category_color').popover(colorPickerOptions);
 
-        jQuery(document).on('click', '#color_change_triggered', function (e) {
-            var color = jQuery('#hex_value').val();
-            jQuery('#category_color').val(color);
-            jQuery('#category_color').popover('hide');
-        });
-
-        jQuery(document).on('click', '#color_picker_cancel', function (e) {
-            jQuery('#category_color').popover('hide');
-        });
-
-        jQuery(document).ready(function () {
-            createCategoriesList();
-            createColorsList();
-        });
-
-        function createColorsList () {
-            var colors_list = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#C91BC0', '#F9D76F', '#A0E8BC', '#A50505'];
-            _.each(colors_list, function (color) {
-                var template = jQuery('#color_picker_item').html();
-                jQuery('.color_row').append(_.template(template)({color: color}));
-            });
-
-        }
-        function createCategoriesList () {
-            var el = jQuery('#categories_selection_app');
-            Graph.getCategoriesList().then(function(categoriesList){
-                el.empty();
-                _.each(categoriesList, function (category) {
-                    el.append('<option>'+category.name+'</option>')
+            jQuery(document).on('click', '#edit-row-finish', function() {
+                var name = jQuery('#edit-row-row-name'),
+                    numberOfSeats = jQuery('#edit-row-number-of-seats'),
+                    rotate = jQuery('#edit-row-rotate'),
+                    category = jQuery("#categories_selection_app option:selected");
+                Graph.editRow({
+                    name: name.val(),
+                    numberOfSeats: numberOfSeats.val(),
+                    rotate: rotate.val(),
+                    category: category.text()
                 });
+                name.val('');
+                numberOfSeats.val('');
+                rotate.val('');
+                jQuery('.edit-row-modal-sm').modal('hide');
             });
-        }
 
-        function createElementsRow () {
-            Graph.createSeatsLine(jQuery('#col-qty').val());
-        }
+            jQuery(document).on('click', '#currency_change_triggered', function () {
+                var priceBtn = jQuery('#price_type_app_btn');
+                priceBtn.text(jQuery('#currency_value').val());
+                priceBtn.popover('hide');
+            });
 
-        function createColoredElementsRow() {
-            Graph.createSeatsLine(jQuery('#col-qty-clr').val(), 1, jQuery("#categories_selection_app option:selected").text());
-        }
+            jQuery(document).on('click', '#create_category_app_btn', function () {
+                var category = {
+                    name: jQuery('#category_name').val(),
+                    color: jQuery('#category_color').val(),
+                    price: jQuery('#category_price').val()
+                };
+                var currency = jQuery('#price_type_app_btn').text();
+                Graph.addCategory(category, currency);
+                jQuery('.add-category-modal-sm').modal('hide');
+                var el = jQuery('#categories_selection_app');
+                createCategoriesList();
+            });
 
-        function createElementsRowWithNumberStaringFrom() {
-            Graph.createSeatsLine(jQuery('#col-qty-with-numbering').val(), jQuery('#col-qty-with-numbering-start-from').val());
-        }
+            jQuery(document).on('click', '#categories_selection_app', function (e) {
+                e.stopPropagation();
+            });
 
-        function createElementsRowWithRadius() {
-            Graph.natCreateSeatsLine(jQuery('#nat-col-qty-with-numbering').val(), jQuery('#col-qty-with-numbering-columns').val(), jQuery('#nat-col-qty-with-numbering-start-from').val(), jQuery('#col-qty-with-numbering-rotation').val(), jQuery('#col-qty-with-numbering-radius').val());
-        }
+            jQuery(document).on('click', 'input[name="color_picker"]', function (e) {
+                var color = jQuery(this).val().replace('#', '');
+                jQuery('#hex_value').val(color);
+            });
+
+            jQuery(document).on('click', '#color_change_triggered', function (e) {
+                var color = jQuery('#hex_value').val();
+                jQuery('#category_color').val(color);
+                jQuery('#category_color').popover('hide');
+            });
+
+            jQuery(document).on('click', '#color_picker_cancel', function (e) {
+                jQuery('#category_color').popover('hide');
+            });
+
+            jQuery(document).ready(function () {
+                createCategoriesList();
+                createColorsList();
+            });
+
+            function createColorsList () {
+                var colors_list = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#C91BC0', '#F9D76F', '#A0E8BC', '#A50505'];
+                _.each(colors_list, function (color) {
+                    var template = jQuery('#color_picker_item').html();
+                    jQuery('.color_row').append(_.template(template)({color: color}));
+                });
+
+            }
+            function createCategoriesList () {
+                var el = jQuery('#categories_selection_app');
+                Graph.getCategoriesList().then(function(categoriesList){
+                    el.empty();
+                    _.each(categoriesList, function (category) {
+                        el.append('<option>'+category.name+'</option>')
+                    });
+                });
+            }
+
+            function createElementsRow () {
+                Graph.createSeatsLine(jQuery('#col-qty').val());
+            }
+
+            function createColoredElementsRow() {
+                Graph.createSeatsLine(jQuery('#col-qty-clr').val(), 1, jQuery("#categories_selection_app option:selected").text());
+            }
+
+            function createElementsRowWithNumberStaringFrom() {
+                Graph.createSeatsLine(jQuery('#col-qty-with-numbering').val(), jQuery('#col-qty-with-numbering-start-from').val());
+            }
+
+            function createElementsRowWithRadius() {
+                Graph.natCreateSeatsLine(jQuery('#nat-col-qty-with-numbering').val(), jQuery('#col-qty-with-numbering-columns').val(), jQuery('#nat-col-qty-with-numbering-start-from').val(), jQuery('#col-qty-with-numbering-rotation').val(), jQuery('#col-qty-with-numbering-radius').val());
+            }
         </script>
         <?php
     }
