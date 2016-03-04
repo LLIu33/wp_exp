@@ -151,7 +151,10 @@ class Tribe__Tickets__Main__Extend {
     function show_wp_map_chart() {
         global $post;
         $event_id = $post->ID;
-        $attendees =  get_post_info(
+        
+        $tickets = $this->get_tickets( $event_id );
+
+        $attendees =  $this->get_post_info(
             'tribe_rsvp_attendees', 
             null, 
             array(
@@ -160,8 +163,14 @@ class Tribe__Tickets__Main__Extend {
                 )
         );
 
-        var_dump($attendees);
-        die;
+        function getSeatsInfo($val) {
+            $seatsInfo = get_post_meta ( $val->ID, 'seats', true);
+            return array($val->ID, $seatsInfo);
+        }
+
+        $seatsAttendeeMap = array_map("getSeatsInfo", $attendees);
+
+
         include self::instance()->plugin_path . 'map-chart.php';
     }
 
@@ -260,6 +269,7 @@ class Tribe__Tickets__Main__Extend {
     // }
 
     function get_post_info($post_type, $p = null, $args = array() ) {
+
         $defaults = array(
             'post_type'            => $post_type, //'map_seats','tribe_venue'
             'nopaging'             => 1,
@@ -320,6 +330,80 @@ class Tribe__Tickets__Main__Extend {
             return esc_html($seats);
         }
         return $existing;
+    }
+
+    /**
+     * Returns all the tickets for an event
+     *
+     * @param int $event_id
+     *
+     * @return array
+     */
+    protected function get_tickets( $event_id ) {
+        $ticket_ids = $this->get_tickets_ids( $event_id );
+        if ( ! $ticket_ids ) {
+            return array();
+        }
+
+        $tickets = array();
+
+        foreach ( $ticket_ids as $post ) {
+            $tickets[] = $this->get_ticket( $event_id, $post );
+        }
+
+        return $tickets;
+    }
+
+        /**
+     * Gets an individual ticket
+     *
+     * @param $event_id
+     * @param $ticket_id
+     *
+     * @return null|Tribe__Tickets__Ticket_Object
+     */
+    public function get_ticket( $event_id, $ticket_id ) {
+        $product = get_post( $ticket_id );
+
+        if ( ! $product ) {
+            return null;
+        }
+
+        $return = new stdClass();
+        $qty    = (int) get_post_meta( $ticket_id, 'total_sales', true );
+
+        $return->description    = $product->post_excerpt;
+        $return->ID             = $ticket_id;
+        $return->name           = $product->post_title;
+        $return->price          = get_post_meta( $ticket_id, '_price', true );
+        $return->provider_class = get_class( $this );
+        $return->admin_link     = '';
+        $return->start_date     = get_post_meta( $ticket_id, '_ticket_start_date', true );
+        $return->end_date       = get_post_meta( $ticket_id, '_ticket_end_date', true );
+
+        // $return->manage_stock( 'yes' === get_post_meta( $ticket_id, '_manage_stock', true ) );
+        // $return->stock( get_post_meta( $ticket_id, '_stock', true ) - $qty );
+        // $return->qty_sold( $qty );
+
+        return $return;
+    }
+
+    public function get_tickets_ids( $event_id ) {
+        if ( is_object( $event_id ) ) {
+            $event_id = $event_id->ID;
+        }
+
+        $query = new WP_Query( array(
+            'post_type'      => 'tribe_rsvp_tickets',
+            'meta_key'       => '_tribe_rsvp_for_event',
+            'meta_value'     => $event_id,
+            'meta_compare'   => '=',
+            'posts_per_page' => - 1,
+            'fields'         => 'ids',
+            'post_status'    => 'publish',
+        ) );
+
+        return $query->posts;
     }
 
     // function tribe_venues_custom_field_support( $args ) {
