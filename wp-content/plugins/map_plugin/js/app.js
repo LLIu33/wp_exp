@@ -187,7 +187,6 @@ function App() {}
             d3.select(self.currentGroupForEdit).selectAll('g.point > .inner').each(function(d){
                 d.color = self._isHexColorFormat(category.color) ? '#'+category.color : category.color;
                 d3.select(this).attr('fill',  d.color);
-                console.info(this);
             });
         }
         if(config.rotate || config.rotate === 0) {
@@ -227,6 +226,21 @@ function App() {}
                 cx       : p[0],
                 cy       : p[1],
                 r       : 0
+            })
+            .style('fill', 'white')
+            .style('stroke', 'grey');
+    };
+
+    App.prototype._createText = function (target) {
+        var p = d3.mouse(target);
+        self.isTextCreated = false;
+        d3.select('svg > g').append("rect")
+            .attr({
+                class   : "custom-text text-creation",
+                x       : p[0],
+                y       : p[1],
+                width   : 0,
+                height  : 0
             })
             .style('fill', 'white')
             .style('stroke', 'grey');
@@ -396,12 +410,14 @@ function App() {}
                         if (self.isCircleCreationSelected) {
                             return self._createCircle(target);
                         }
+                        if(self.isTextCreationSelected) {
+                            return self._createText(target);
+                        }
                         return self._createSelectionRectAt(target);
                     } else {
-                        //d3.event.sourceEvent.stopPropagation();
+                        //d3.event.stopPropagation();
                     }
                 }
-               
             })
             .on("mousemove", function() {
                 if ( self.isBlockCreationSelected) {
@@ -525,13 +541,26 @@ function App() {}
                                     .classed("selected", true);
                             }
                         });
+                        d3.selectAll('g.label').each(function (state_data) {
+                            var elementAbsoluteCoords = this.getBoundingClientRect();
+                            var dAbsoluteCoords = s[0][0].getBoundingClientRect();
+                            if (
+                                !d3.select(this).classed("selected") &&
+                                elementAbsoluteCoords.left >= dAbsoluteCoords.left && elementAbsoluteCoords.right <= dAbsoluteCoords.right &&
+                                elementAbsoluteCoords.top >= dAbsoluteCoords.top && elementAbsoluteCoords.bottom <= dAbsoluteCoords.bottom
+                            ) {
+                                d3.select(this)
+                                    .classed("selected", true);
+                            }
+                        });
                     }
                 }
             })
             .on("mouseup", function() {
+                self.isEnterPressed = false;
                 d3.select("svg > rect.selection").remove();
                 d3.selectAll('g.point.selection').classed("selection", false);
-                if (self.isBlockCreationSelected) {
+                if(self.isBlockCreationSelected) {
                     self.isBlockCreated = true;
                     var maxIdShape = _.max(self.shapes['ungrouped'], function (shape) {
                         return shape.id;
@@ -561,10 +590,9 @@ function App() {}
                         var element = d3.select(this);
                         var x = parseInt(element.attr('cx'), 10),
                             y = parseInt(element.attr('cy'), 10),
-                            r = parseInt(element.attr('r'), 10),
-                            w = parseInt(element.attr('r'), 10);
+                            r = parseInt(element.attr('r'), 10);
 
-                        var obj = { id: maxId++, x: x, y: y, r: r, w: w, color: 'white', number: '', type: 'circle' };
+                        var obj = { id: maxId++, x: x, y: y, r: r, w: r, h: r, color: 'white', number: '', type: 'circle' };
 
                         self.shapes['ungrouped'].push(obj);
                         self._createShapes({ 'ungrouped': self.shapes['ungrouped'] });
@@ -572,6 +600,58 @@ function App() {}
                         this.remove();
                     });
                 }
+                if(self.isTextCreationSelected) {
+                    var that = this;
+                    var p = d3.mouse(this);
+
+                    var inpObj = d3.select(this)
+                        .append("foreignObject")
+                        .attr('x', p[0])
+                        .attr('y', p[1])
+                        .attr('class', 'input-text')
+                        .append("xhtml:form");
+
+                    var inp = inpObj
+                        .append("input")
+                        .attr("style", "width: 200px;")
+                        .attr("value", function() {
+                            this.focus();
+                        })
+                        .on("blur", function() {
+                            var txt = inp.node().value;
+                            if ( ! self.isEnterPressed) {
+                                d3.select(that).select(".input-text").remove();
+                            }
+                            if( ! txt) return;
+
+                            var maxIdShape = _.max(self.shapes.labels, function (shape) {
+                                return shape.id;
+                            });
+                            var maxId = maxIdShape.id + 1 || 1;
+                            self.shapes['labels'].push({x: p[0], y: p[1], text: txt, type: 'text', id: maxId});
+                            self._createLabels({labels: self.shapes['labels']});
+                            self.saveGraph();
+
+                        })
+                        .on("keypress", function() {
+                            // IE fix
+                            if (!d3.event)
+                                d3.event = window.event;
+
+                            var e = d3.event;
+                            if (e.keyCode == 13) {
+                                self.isEnterPressed = true;
+                                if (typeof(e.cancelBubble) !== 'undefined') // IE
+                                    e.cancelBubble = true;
+                                if (e.stopPropagation)
+                                    e.stopPropagation();
+                                e.preventDefault();
+
+                                var txt = inp.node().value;
+                                d3.select(that).select(".input-text").remove();
+                            }
+                        });
+                    }
             })
             .on("mouseout", function() {
                 if( d3.event.relatedTarget.tagName=='HTML') {
@@ -655,8 +735,41 @@ function App() {}
             self.shapes = response.graphData;
             self.categories = response.categories;
             self._createShapes(self.shapes);
+            self._createLabels(self.shapes);
             self._createTool('tools');
         });
+    };
+    App.prototype._createLabels = function (data) {
+        if( ! data['labels']) return;
+        var i = 0;
+        self.label = self.graph.selectAll("svg>g>g.label").data(data['labels'], function (d) {
+            return d.id || (d.id = ++i);
+        });
+        self.labelEnter = self.label.enter().append("g")
+            .attr("class", "label")
+            .attr("cursor", "pointer")
+            .call(self.draggable());
+
+        /*self.labelEnter = self.label
+            .append("rect")
+            .attr("x", -4)
+            .attr("y", -4)
+            .attr("height", function (d) {
+                return 10;
+            })
+            .attr("width", 10)
+            .attr("fill", "black")
+            .attr("class", "outer");*/
+
+        self._textElement(self.labelEnter);
+
+        self.rotate(self.label);
+
+        self.labelExit = self.label.exit()
+            .remove();
+        self.labelExit.select("text")
+            .remove();
+
     };
     App.prototype._createTools = function () {
         self._createTool('categories');
@@ -694,6 +807,11 @@ function App() {}
                             .translate(tagX, tagY)
                             .rotate(rotate)();
                     })
+                    .on("click", function(d) {
+                        console.log('clic ked', this);
+                        jQuery('.edit-row-modal-sm').modal('show');
+                        self.currentGroupForEdit = this.parentNode.parentNode;
+                    })
                     .call(self.groupDrag());
 
                 self.groupRect = self.tag
@@ -723,11 +841,7 @@ function App() {}
                         return group.groupTag.name || '?';
                     })
                     .attr("fill", "white")
-                    .style("cursor", "pointer")
-                    .on("click", function(d) {
-                        jQuery('.edit-row-modal-sm').modal('show');
-                        self.currentGroupForEdit = this.parentNode.parentNode;
-                    });
+                    .style("cursor", "pointer");
 
                 self.node = self.groupContainer.selectAll("g.point").data(group.groupElements, function(d) {
                     return d.id || (d.id = ++i);
@@ -774,45 +888,61 @@ function App() {}
                 self.updateColorsAndCountsForTheElements();
             });
         }
+        if( ! _.isUndefined(data['ungrouped'])) {
+            this.node = this.graph.selectAll("svg>g>g.point").data(data['ungrouped'], function(d) {
+                return d.id || (d.id = ++i);
+            });
 
-        if(_.isUndefined(data['ungrouped'])) return;
-        this.node = this.graph.selectAll("svg>g>g.point").data(data['ungrouped'], function(d) {
-            return d.id || (d.id = ++i);
-        });
+            this.nodeEnter = this.node.enter().append("g")
+                .attr("class", "point")
+                .attr("cursor", "pointer")
+                .call(this.draggable());
 
-        this.nodeEnter = this.node.enter().append("g")
-            .attr("class", "point")
-            .attr("cursor", "pointer")
-            .call(this.draggable());
+            this.nodeEnter.append("rect")
+                .attr("x", function (d) {
+                    if(d.r) {
+                        return -(parseInt(d.w, 10)*2 + 10) / 2
+                    }
+                    return -4;
+                })
+                .attr("y", function (d) {
+                    if(d.r) {
+                        return -(parseInt(d.h, 10) * 2 + 10) / 2
+                    }
+                    return -4;
+                })
+                .attr("width", function (d) {
+                    if(d.r) {
+                        return parseInt(d.r)*2 + 10
+                    }
+                    return parseInt(d.w, 10) + 10;
+                })
+                .attr("height", function (d) {
+                    if(d.r) {
+                        return parseInt(d.r)*2 + 10
+                    }
+                    return parseInt(d.h, 10) + 10;
+                })
+                .attr("class", "outer");
 
-        this.nodeEnter.append("rect")
-            .attr("x", -4)
-            .attr("y", -4)
-            .attr("width", function (d) {
-                return parseInt(d.w, 10) + 10;
-            })
-            .attr("height", function (d) {
-                return parseInt(d.h, 10) + 10;
-            })
-            .attr("class", "outer");
+            this._shapeType(this.nodeEnter);
 
-        this._shapeType(this.nodeEnter);
+            this.nodeEnter.append("text")
+                .attr("x", 0)
+                .attr("y", ".35em")
+                .attr("text-anchor", "middle")
+                .text(function(d){
+                    return d.number;
+                })
+                .style("fill-opacity", 1);
 
-        this.nodeEnter.append("text")
-            .attr("x", 0)
-            .attr("y", ".35em")
-            .attr("text-anchor", "middle")
-            .text(function(d){
-                return d.number;
-            })
-            .style("fill-opacity", 1);
+            this.rotate(this.node);
 
-        this.rotate(this.node);
-
-        this.nodeExit = this.node.exit()
-            .remove();
-        this.nodeExit.select("text")
-            .remove();
+            this.nodeExit = this.node.exit()
+                .remove();
+            this.nodeExit.select("text")
+                .remove();
+        }
     };
     App.prototype._createItemExamples = function () {
         var circle_container = d3.select('div.radio_circle label');
@@ -852,14 +982,29 @@ function App() {}
             .attr("height", function (d) {
                 return d.h;
             })
-            .attr("r", 20)
+            .attr("r", function (d) {
+                return d.r || 0;
+            })
             .attr("stroke", "black")
             .attr("stroke-width", "2")
             .attr("fill",function(d){
                return self._getElementColor(d.color);
              })
             .attr("class", "inner");
-        };
+    };
+    App.prototype._textElement = function (element) {
+        element.append(function(d) {
+            return document.createElementNS("http://www.w3.org/2000/svg", d.type);
+        })
+
+            .text(function (d) {
+                return d.text;
+            })
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("class", "inner")
+            .style("font-size","24px");
+    };
     App.prototype.zoomed = function () {
         self.graph.attr("transform",
             "translate(" + self.zoom.translate() + ")" +
@@ -1551,6 +1696,9 @@ function App() {}
                 }
                 if (d.text.name == 'rows') {
                     self.isRowsToolSelected = !self.isRowsToolSelected;
+                    self.isBlockCreationSelected = false;
+                    self.isCircleCreationSelected = false;
+                    self.isTextCreationSelected = false;
                     if(self.isRowsToolSelected) {
                         return self._createTools();
                     } else {
@@ -1558,15 +1706,22 @@ function App() {}
                     }
                 }
                 if (d.text.name == 'blocks') {
+                    self.isCircleCreationSelected = false;
+                    self.isTextCreationSelected = false;
+                    self.isRowsToolSelected = false;
                     self.isBlockCreationSelected = !self.isBlockCreationSelected;
                 }
                 if (d.text.name == 'circles') {
                     self.isBlockCreationSelected = false;
+                    self.isTextCreationSelected = false;
+                    self.isRowsToolSelected = false;
                     self.isCircleCreationSelected = !self.isCircleCreationSelected;
-                   // self._createCircle();
                 }
                 if (d.text.name == 'text') {
-                   // self._createText();
+                    self.isBlockCreationSelected = false;
+                    self.isCircleCreationSelected = false;
+                    self.isRowsToolSelected = false;
+                    self.isTextCreationSelected = !self.isTextCreationSelected;
                 }
                 self._deleteExtraTools();
             });
@@ -1666,6 +1821,9 @@ function App() {}
             setTimeout(function() {
                 var data = {
                     'graphData': {
+                        'labels': [
+                            { x: 823, y: 209, text: 'test', type: 'text' }
+                        ],
                         'ungrouped': [
                             /*{ x: 100, y: 10, w: 40, h:40, color: 'red', number: '200', type: 'rect' },
                             { x: 140, y: 10, w: 40, h:40, color: 'red', number: '201', type: 'rect' },
@@ -1685,7 +1843,7 @@ function App() {}
                             { x: 130, y: 0, w: 40, h:40, color: 'green', number: '115', type: 'rect' }*/
                         ],
                         'grouped': [
-                            {
+                            /*{
                                 'groupTag': {
                                     'name': '?',
                                     'coords': {
@@ -1699,7 +1857,7 @@ function App() {}
                                     { x: 130, y: 30, w: 40, h:40, color: 'green', number: '787', type: 'rect' },
                                     { x: 10, y: 0, w: 40, h:40, color: 'green', number: '565', type: 'rect' }
                                 ]
-                            }
+                            }*/
                         ]
                     },
                     'categories': [
@@ -1725,7 +1883,7 @@ function App() {}
             if(data) {
                 this.resolve(JSON.parse(data));
             }
-            this.resolve({ graphData: [], categories: [] });
+            this.resolve({ graphData: { 'labels': [], 'ungrouped': [], 'grouped': [] }, categories: [] });
         });
     };
     App.prototype.getData = function () {
@@ -1787,28 +1945,14 @@ function App() {}
         var shapes = [];
         var groups = [];
         var result = {};
+        var labels = [];
+
         d3.selectAll('svg>g>g.point').each(function (d) {
             shapes.push(d);
         });
-
-        /*d3.selectAll('.custom-block').each(function () {
-            var element = d3.select(this);
-            var x = parseInt(element.attr('x'), 10),
-                y = parseInt(element.attr('y'), 10),
-                w = parseInt(element.attr('width'), 10),
-                h = parseInt(element.attr('height'), 10);
-            shapes.push({ x: x, y: y, w: w, h: h, color: 'white', number: '', type: 'rect' });
-        });*/
-
-        /*d3.selectAll('.custom-circle').each(function () {
-            var element = d3.select(this);
-            var x = parseInt(element.attr('cx'), 10),
-                y = parseInt(element.attr('cy'), 10),
-                r = parseInt(element.attr('r'), 10),
-                w = parseInt(element.attr('r'), 10);
-            shapes.push({ x: x, y: y, r: r, w: w, color: 'white', number: '', type: 'circle' });
-        });*/
-
+        d3.selectAll('svg>g>g.label').each(function (d) {
+            labels.push(d);
+        });
         d3.selectAll('svg>g>g.group').each(function (g) {
             var elements = [];
             var coords = d3.transform(d3.select(this).attr("transform"));
@@ -1839,6 +1983,7 @@ function App() {}
 
         result.ungrouped = shapes;
         result.grouped = groups;
+        result.labels = labels;
         return  result;
     };
     App.prototype.getCategoriesInfo = function () {

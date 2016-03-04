@@ -113,6 +113,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
  
     function map_metabox() {
         global $post;
+
         // Noncename needed to verify where the data originated
         echo '<input type="hidden" name="map_post_noncename" value="' . wp_create_nonce( plugin_basename(__FILE__) ) . '" />';
 
@@ -270,7 +271,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         </div>
         <input type="hidden" id="graphData" name="graphData" />
         <input type="hidden" id="getData" name="getData"  value='<?php echo $post->post_content ?>'/>
-
+        
         <div class="modal fade add-category-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
             <div class="modal-dialog modal-sm">
                 <div class="modal-content">
@@ -303,6 +304,32 @@ if( ! function_exists( 'map_create_post_type' ) ) :
                 </div>
             </div>
         </div>
+        <div class="modal fade edit-row-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content">
+                    <h4 class="modal-header"> Edit row </h4>
+                    <div class="modal-body">
+                        <div class="form-inline text-center edit-row-collect">
+                            <div class="form-group">
+                                <input class="form-control" type="text" id="edit-row-row-name" placeholder="Set row name" />
+                            </div>
+                            <div class="form-group">
+                                <input class="form-control" type="text" id="edit-row-number-of-seats" placeholder="Set number of seats" />
+                            </div>
+                            <div class="form-group">
+                                <select class="form-control" id="categories_selection_app"></select>
+                            </div>
+                            <div class="form-group">
+                                <input class="form-control" type="number" id="edit-row-rotate" placeholder="Rotate" step="any" min="0"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-success" id="edit-row-finish">Ok</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="hidden" id="popover-contents-section">
             <div class="form-inline">
                 <div class="form-group">
@@ -324,6 +351,17 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             <button type="button" id="color_change_triggered" class="btn btn-primary">Ok</button>
             <button type="button" id="color_picker_cancel" class="btn btn-default">Cancel</button>
         </div>
+
+    <script type="text/html" id="color_picker_item">
+        <td>
+            <div class="form-group">
+                <label>
+                    <input type="radio" name="color_picker" value="<%= color %>"/>
+                    <div class="color_box" style="background-color: <%= color %>"></div>
+                </label>
+            </div>
+        </td>
+    </script>
 
         <script type="text/html" id="color_picker_item">
             <td>
