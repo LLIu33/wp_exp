@@ -22,11 +22,11 @@ class Tribe__Tickets__Main__Extend {
      */
     private static $instance;
 
-    // public $plugin_name;
-    // public $plugin_dir;
-    // public $plugin_path;
-    // public $plugin_url;
-    // public $legacy_provider_support;
+    public $plugin_name;
+    public $plugin_dir;
+    public $plugin_path;
+    public $plugin_url;
+    public $plugin_slug;
 
     private $has_initialized = false;
 
@@ -75,13 +75,6 @@ class Tribe__Tickets__Main__Extend {
             return;
         }
 
-        // $this->init_autoloading();
-
-        // // initialize the common libraries
-        // $this->common();
-
-        // load_plugin_textdomain( 'event-tickets', false, $this->plugin_dir . 'lang/' );
-
         $this->init();
         $this->hooks();
         
@@ -111,7 +104,7 @@ class Tribe__Tickets__Main__Extend {
         add_action( 'wp_enqueue_scripts', array($this, 'my_enqueue') );
     }
 
-    function my_enqueue() {
+    public function my_enqueue() {
         global $post_type;
 
         if ( 'tribe_events' != $post_type ) {
@@ -148,10 +141,10 @@ class Tribe__Tickets__Main__Extend {
         wp_enqueue_style( 'custom_wp_admin_css' );
     }
 
-    function show_wp_map_chart() {
+    public function show_wp_map_chart() {
         global $post;
         $event_id = $post->ID;
-        
+
         $tickets = $this->get_tickets( $event_id );
 
         $attendees =  $this->get_post_info(
@@ -212,7 +205,7 @@ class Tribe__Tickets__Main__Extend {
         );
     }
 
-    function events_my_enqueue($hook) {
+    public function events_my_enqueue($hook) {
         global $post_type;
         if ( 'tribe_events' != $post_type || ('post-new.php' != $hook && 'post.php' != $hook ) ) {
             return;
@@ -230,45 +223,11 @@ class Tribe__Tickets__Main__Extend {
         );
     }
 
-    // public function change_event_mb_tpl($tpl) {
-    //     var_dump($tpl);die;
-    //     return $this->plugin_path . '/events-meta-box.php';
-    // }
-
     public function displayEventMapDropdown() {
         include self::instance()->plugin_path . 'choose-map-row.php';
     }
 
-    // public function saved_map_dropdown( $current = null, $name = 'map[MapID]' ) {
-    //     global $post;
-    //     $my_map_ids     = array();
-    //     $my_maps        = false;
-    //     $my_map_options = '';
-
-    //     $selected_map_id = get_post_meta($post->ID, '_map_id', true);
-
-    //     $my_maps = $this->my_maps;
-
-    //     if ( ! empty( $my_maps ) ) {
-    //         foreach ( $my_maps as $my_map ) {
-    //             $my_map_ids[] = $my_map->ID;
-    //             $map_title    = wp_kses( get_the_title( $my_map->ID ), array() );
-    //             $my_map_options .= '<option value="' . esc_attr( $my_map->ID ) . '"';
-    //             $my_map_options .= selected( $selected_map_id, $my_map->ID, false );
-    //             $my_map_options .= '>' . $map_title . '</option>';
-    //         }
-    //     }
-
-    //     // if ( $my_maps ) {
-    //     //     echo '<select class="chosen map-dropdown" style="width: 220px;" name="' . esc_attr( 'map_id' ) . '" id="saved_map">';
-    //     //     echo $my_map_options;
-    //     //     echo '</select>';
-    //     // } else {
-    //     //     echo '<p class="nosaved">' . esc_html__( 'No saved Map%s exists.') . '</p>';
-    //     // }
-    // }
-
-    function get_post_info($post_type, $p = null, $args = array() ) {
+    public function get_post_info($post_type, $p = null, $args = array() ) {
 
         $defaults = array(
             'post_type'            => $post_type, //'map_seats','tribe_venue'
@@ -354,7 +313,7 @@ class Tribe__Tickets__Main__Extend {
         return $tickets;
     }
 
-        /**
+    /**
      * Gets an individual ticket
      *
      * @param $event_id
@@ -405,31 +364,4 @@ class Tribe__Tickets__Main__Extend {
 
         return $query->posts;
     }
-
-    // function tribe_venues_custom_field_support( $args ) {
-    //     $args['supports'][] = 'custom-fields';
-    //     return $args;
-    // }
-
-    // function show_wp_custom_fields() {
-    //     var_dump('expression');die;
-    //     $eventData = get_post_meta( get_the_ID() );
-    //     $venueId = $eventData['_EventVenueID'][0];
-    //     foreach (  get_post_meta( $venueId ) as $field => $value ) {
-    //         echo '<span>' . esc_html( $field ) . ': <strong> ' . esc_html( $value ) . '<strong></span><br/>';
-    //     }
-    // }
-
-    // if ( post_type_exists( 'tribe_events' ) ) {
-    //     self::$parent_page = 'edit.php?post_type=tribe_events';
-    // } else {
-    //     add_menu_page(
-    //         esc_html__( 'Events', 'tribe-common' ),
-    //         esc_html__( 'Events', 'tribe-common' ),
-    //         apply_filters( 'tribe_common_event_page_capability', 'manage_options' ),
-    //         'tribe-common',
-    //         null,
-    //         'dashicons-calendar'
-    //     );
-    // }
 }
