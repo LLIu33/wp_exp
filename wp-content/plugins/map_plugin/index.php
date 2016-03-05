@@ -1,12 +1,10 @@
 <?php
 
 /*
-Plugin Name: Map Example
-Plugin URI: http://
-Description: Map Example Description.
+Plugin Name: Map Chart 
+Description: Plugin for creation map of seats. Depends on Event Calendar & Event Tickets.
 Version: 1.0
 Author: Artem G.
-Author URI: http://
 */
 
 
@@ -345,23 +343,12 @@ if( ! function_exists( 'map_create_post_type' ) ) :
             <button type="button" id="color_picker_cancel" class="btn btn-default">Cancel</button>
         </div>
 
-    <script type="text/html" id="color_picker_item">
-        <td>
-            <div class="form-group">
-                <label>
-                    <input type="radio" name="color_picker" value="<%= color %>"/>
-                    <div class="color_box" style="background-color: <%= color %>"></div>
-                </label>
-            </div>
-        </td>
-    </script>
-
         <script type="text/html" id="color_picker_item">
             <td>
                 <div class="form-group">
                     <label>
                         <input type="radio" name="color_picker" value="<%= color %>"/>
-                        <div class="color_box" style="background-color: <%= color %>">                    
+                        <div class="color_box" style="background-color: <%= color %>">
                         </div>
                     </label>
                 </div>
@@ -559,7 +546,6 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         return false;
     }
  
- 
     function map_post_save_meta( $post_id, $post ) { // save the data
  
         /*
@@ -603,63 +589,4 @@ if( ! function_exists( 'map_create_post_type' ) ) :
     add_action( 'save_post', 'map_post_save_meta', 1, 2 ); // save the custom fields
 endif;
 
-
-// if( ! function_exists( 'view_maps_posts' ) ) :
-//     function view_maps_posts($do_shortcode = 1, $strip_shortcodes = 0 ) {
- 
-//         $args = array(
-//             'posts_per_page'     => 100,
-//             'offset'          => 0,
-//             //'category'        => ,
-//             'orderby'         => 'menu_order, post_title', // post_date, rand
-//             'order'           => 'DESC',
-//             'post_type'       => 'map_seats',
-//             'post_status'     => 'publish',
-//             'suppress_filters' => true
-//         );
- 
-//         $posts = get_posts( $args );
- 
-//         $html = '';
-//         foreach ( $posts as $post ) {
-//             // $meta_name = get_post_meta( $post->ID, '_map_post_name', true );
-//             // $meta_desc = get_post_meta( $post->ID, '_map_post_desc', true );
-//             $meta_venue = get_post_meta( $post->ID, '_map_venue_id', true );
-//             // $img = get_the_post_thumbnail( $post->ID, 'medium' );
-//             // if( empty( $img ) ) {
-//             //     $img = '<img src="'.plugins_url( '/img/default.png', __FILE__ ).'">';
-//             // }
- 
- 
-//             // if( has_post_thumbnail( $post->ID ) ) {
-//             //     $img = wp_get_attachment_image_src( get_post_thumbnail_id( $post->ID ), 'thumbnail' );
-//             //     $img_url = $img[0];
- 
-//             //     //the_post_thumbnail( 'thumbnail' ); /* thumbnail, medium, large, full, thumb-100, thumb-200, thumb-400, array(100,100) */
-//             // }
- 
-//             $content = $post->post_content;
-//             if( $do_shortcode == 1 ) {
-//                 $content = do_shortcode( $content );
-//             }
-//             if( $strip_shortcodes == 1 ) {
-//                 $content = strip_shortcodes( $content );
-//             }
-//             $content = wp_trim_words( $content, 30, '...');
-//             $content = wpautop( $content );
- 
-//             $html .= '
-//             <div>
-//                 <h3>'.$post->post_title.'</h3>
-//                 <div>
-//                     <p>Venue_id: '.$meta_venue.'</p>
-//                 </div>
-//                 <div>'.$content.'</div>
-//             </div>
-//             ';
-//         }
-//         $html = '<div class="wrapper">'.$html.'</div>';
-//         return $html;
-//     }
-// endif;
 ?>
