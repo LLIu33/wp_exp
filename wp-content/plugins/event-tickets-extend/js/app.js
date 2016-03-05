@@ -8,7 +8,7 @@ function App() {}
     };
 
     //Application Something
-    App.prototype.createSeatsLine = function (shapesQty, startFrom, categoryName) {
+    /*App.prototype.createSeatsLine = function (shapesQty, startFrom, categoryName) {
         var startFrom = startFrom || 1;
         var type = $('input[name=itemType]:checked').val();
         var maxIdShape = _.max(self.shapes, function (shape) {
@@ -32,20 +32,38 @@ function App() {}
         }
         self._createShapes(self.shapes);
         self.saveGraph();
-    };
-    App.prototype.natCreateSeatsLine = function (shapesQty, numOfColumns, startFrom, rotation, radius) {
+    };*/
+    App.prototype.natCreateSeatsLine = function (shapesQty, numOfColumns, startFrom, rotation, radius, categoryName) {
+        if(shapesQty < 1) {
+            alert('Please enter number of seats');
+            return;
+        }
         var shapes = [];
         var res, extra_rotate;
         var numOfColumns = numOfColumns || 1;
         var rotation = rotation || 0;
         var startFrom = startFrom || 1;
         var type = $('input[name=itemType]:checked').val();
+        var maxIdShape = _.max(self.shapes, function (shape) {
+            return shape.id;
+        });
+        var maxId = maxIdShape.id + 1;
 
         for (var j = 0; j < numOfColumns; j++) {
             shapes[j] = [];
-            for (var i = 0;  i <= shapesQty; i++) {
-                var shape = self.createDummyShape(type, shapes[j].length);
+            var shape;
+            for (var i = 0;  i <= shapesQty - 1; i++) {
+                shape = self.createDummyShape(type, shapes[j].length);
                 shape.number = +startFrom + i;
+                shape.id = maxId++;
+                if( !_.isUndefined(categoryName)) {
+                    var cat =_.find(self.categories, {name: categoryName});
+                    if( ! _.isUndefined(cat)) {
+                        shape.color = cat.color;
+                    } else {
+                        shape.color = null;
+                    }
+                }
                 shapes[j].push(shape);
             }
             if ( radius ) {
@@ -53,12 +71,22 @@ function App() {}
                 rotation = rotation - 5; //correction
             }
 
-            self._createShapes(shapes[j], true, rotation);
-            self.saveGraph();    
+            var group = { 'grouped': [{
+                'groupTag': {
+                    'name': '?',
+                    'coords':  this.calculateTagCoords(j, shape)
+                },
+                'groupCoords': this.calculateCoords(j, shape),
+                'groupElements': shapes[j]
+            }]};
+
+            var groupData = group.grouped;
+            self.shapes['grouped'].push(groupData[0]);
+            self._createShapes(group, true, rotation);
+            self.saveGraph();
         }
     };
     App.prototype.makeAnArc = function (shapes, r) {
-        console.log(shapes);
         var new_x, new_y = null;
         var arc_scale = 4;
         var rect_width = shapes[0]['w'],
@@ -88,6 +116,134 @@ function App() {}
             shapes[i]['rotate'] = - 180 * alpha / Math.PI;
         }
         return shapes;
+    };
+    App.prototype.calculateCoords = function (rowNumber, currentShape) {
+        return { x: 0, y: 0 + currentShape.h * rowNumber };
+    };
+    App.prototype.calculateTagCoords = function (rowNumber, currentShape) {
+        return { x: - self.tagWidth - 1, y: 0 }
+    };
+    App.prototype.editRow = function (config) {
+        if(config.name) {
+            d3.select(self.currentGroupForEdit).select('text').text(config.name)
+        }
+        if(config.numberOfSeats) {
+            var elements = d3.select(self.currentGroupForEdit).selectAll('g.point');
+            var i = elements[0].length;
+            var maxD = null;
+
+            if(config.numberOfSeats == elements[0].length) return;
+
+            elements[0].reverse();
+
+            if(config.numberOfSeats < elements[0].length) {
+                elements.each(function (d) {
+                    if(i != config.numberOfSeats) {
+                        d.id = null;
+                        d3.select(this).remove();
+                        i--;
+                    }
+                });
+            } else {
+                var shapes = [];
+                var groupId = parseInt(d3.select(self.currentGroupForEdit).attr('grpId'), 10);
+
+                elements.each(function (d) {
+                    if(maxD === null) {
+                        maxD = d;
+                        while(i != config.numberOfSeats) {
+                            var newShape = _.clone(d);
+                            newShape.id = parseInt(newShape.id, 10) + 1;
+                            newShape.number = parseInt(newShape.number, 10) + 1;
+                            newShape.x = parseInt(newShape.x, 10) + parseInt(newShape.w, 10);
+                            d = _.clone(newShape);
+                            shapes.push(newShape);
+                            i++;
+                        }
+                    }
+                });
+
+                _.each(self.shapes['grouped'], function(group) {
+                    if(parseInt(group.groupId, 10) === groupId) {
+                        _.each(shapes, function (shape) {
+                            group.groupElements.push(shape);
+                        });
+
+                        d3.select(self.currentGroupForEdit).remove();
+                        self._createShapes({ grouped: [group] }, true, 0);
+                        self.saveGraph();
+
+                        d3.selectAll('g.group').each(function (){
+                            if(parseInt(d3.select(this).attr("grpId"), 10) == groupId) {
+                                self.currentGroupForEdit = this;
+                            }
+                        });
+                    }
+                });
+            }
+        }
+        if(config.category) {
+            var category = this._getCategory({ name: config.category });
+            d3.select(self.currentGroupForEdit).selectAll('g.point > .inner').each(function(d){
+                d.color = self._isHexColorFormat(category.color) ? '#'+category.color : category.color;
+                d3.select(this).attr('fill',  d.color);
+            });
+        }
+        if(config.rotate || config.rotate === 0) {
+            var coords = d3.transform(d3.select(self.currentGroupForEdit).attr("transform"));
+            var grpX = coords.translate[0];
+            var grpY = coords.translate[1];
+
+            d3.select(self.currentGroupForEdit).attr("transform", function () {
+                return d3.svg.transform()
+                    .translate(grpX, grpY)
+                    .rotate(config.rotate)();
+            });
+        }
+
+        this.saveGraph();
+    };
+    App.prototype._createBlock = function (target) {
+        var p = d3.mouse(target);
+        self.isBlockCreated = false;
+        d3.select('svg > g').append("rect")
+            .attr({
+                class   : "custom-block block-creation",
+                x       : p[0],
+                y       : p[1],
+                width   : 0,
+                height  : 0
+            })
+            .style('fill', 'white')
+            .style('stroke', 'grey');
+    };
+    App.prototype._createCircle = function (target) {
+        var p = d3.mouse(target);
+        self.isCircleCreated = false;
+        d3.select('svg > g').append("circle")
+            .attr({
+                class   : "custom-circle circle-creation",
+                cx       : p[0],
+                cy       : p[1],
+                r       : 0
+            })
+            .style('fill', 'white')
+            .style('stroke', 'grey');
+    };
+
+    App.prototype._createText = function (target) {
+        var p = d3.mouse(target);
+        self.isTextCreated = false;
+        d3.select('svg > g').append("rect")
+            .attr({
+                class   : "custom-text text-creation",
+                x       : p[0],
+                y       : p[1],
+                width   : 0,
+                height  : 0
+            })
+            .style('fill', 'white')
+            .style('stroke', 'grey');
     };
 
     //Main Application Section
@@ -121,8 +277,8 @@ function App() {}
                 if( ! _.isUndefined(d.rotate)) {
                     degree = d.rotate;
                 }
-                var x = d.x;
-                var y =  d.y;
+                var x = parseInt(d.x, 10);
+                var y =  parseInt(d.y, 10);
                 return d3.svg.transform()
                     .rotate(degree)
                     .translate(x, y)();
@@ -131,6 +287,7 @@ function App() {}
     App.prototype.draggable = function () {
         return d3.behavior.drag()
             .on("drag", function(d,i) {
+                var targetName = this.parentNode;
                 var selection = d3.selectAll('.selected');
                 if( selection[0].indexOf(this) == -1) {
                     selection.classed("selected", false);
@@ -142,7 +299,32 @@ function App() {}
                         d.x += d3.event.dx;
                         d.y += d3.event.dy;
                         return "translate(" + [ d.x,d.y ] + ")"
+                    } else {
+                        var coords = d3.transform(d3.select(this).attr("transform"));
+                        var grpX = coords.translate[0] + d3.event.dx;
+                        var grpY = coords.translate[1] + d3.event.dy;
+                        return "translate(" + [ grpX, grpY ] + ")"
                     }
+                });
+            })
+            .on("dragend", function(d){
+                self.saveGraph();
+            });
+    };
+    App.prototype.groupDrag = function () {
+        return d3.behavior.drag()
+            .on("drag", function(d,i) {
+                var selection = d3.select(this.parentNode);
+                var that = this;
+
+                selection.attr("transform", function( p, i) {
+                    var mouseCoords = d3.mouse(that);
+                    var current_coordinates = d3.transform(selection.attr('transform')).translate;
+                    var rotate = d3.transform(selection.attr('transform')).rotate;
+
+                    current_coordinates[0] += mouseCoords[0];
+                    current_coordinates[1] += mouseCoords[1];
+                    return "translate(" + [ current_coordinates[0], current_coordinates[1] ] + ") rotate(" + rotate + ")"
                 });
             })
             .on("dragend", function(d){
@@ -177,16 +359,21 @@ function App() {}
         this.toolSvgHeight = this.config.toolHeight;
         this.graphContainer = this.config.graphContainer;
         this.toolContainer = this.config.toolContainer;
-        this.shapes = [];
-        //below is the hardcoded selection corrections constants
-        this.widthCorrection = 50;
-        this.heightCorrection = 225;
-        //end of correction constants
         this.graphId = function () {
             var id = jQuery('input[name="post_ID"]').val();
             if(! id) return 'graph';
             return id;
         };
+
+        this.tagHeight = 18;
+        this.tagWidth = 12;
+
+        this.isBlockCreationSelected = false;
+        this.isRowsToolSelected = false;
+        this.isCircleCreationSelected = false;
+
+        this.customCreatedShapesCollection = [];
+
         self = this;
 
         this.zoom = d3.behavior.zoom().scaleExtent([0, 8]).on("zoom", this.zoomed);
@@ -195,14 +382,8 @@ function App() {}
             .on("keydown", function() {
                 if(d3.event.keyCode === 46) {
                     d3.selectAll('g.selected').each(function (d) {
-                        var existing = _.find(self.shapes, d);
-                        if(existing) {
-                            self.shapes = _.reject(self.shapes, function(shape) {
-                                return shape.id === d.id;
-                            });
-                            self._createShapes(self.shapes);
-                            self.saveGraph()
-                        }
+                        d3.select(this).remove();
+                        self.saveGraph();
                     });
                 }
             });
@@ -221,75 +402,260 @@ function App() {}
                 self._cancelSelectionEventDispatcher(d3.event);
 
                 if ( cancel_pan ) {
-                    d3.event.stopImmediatePropagation(); // stop zoom
+                    d3.event.stopImmediatePropagation();
                     if(targetName === 'svg') {
-                        self._createSelectionRectAt(target);
-                    } else if(targetName === 'rect' || targetName === 'text' || targetName === 'circle') {
-                        self._selectionEventDispatcher(d3.event);
+                        if ( self.isBlockCreationSelected) {
+                            return self._createBlock(target);
+                        }
+                        if (self.isCircleCreationSelected) {
+                            return self._createCircle(target);
+                        }
+                        if(self.isTextCreationSelected) {
+                            return self._createText(target);
+                        }
+                        return self._createSelectionRectAt(target);
                     } else {
-                        d3.event.sourceEvent.stopPropagation();
+                        //d3.event.stopPropagation();
                     }
                 }
-               
             })
             .on("mousemove", function() {
-
-                var s = self.svg.select("rect.selection");
-
-                if(!s.empty()) {
-                    var p = d3.mouse(this),
-                        d = {
-                            x       : parseInt( s.attr("x"), 10),
-                            y       : parseInt( s.attr("y"), 10),
-                            width   : parseInt( s.attr("width"), 10),
-                            height  : parseInt( s.attr("height"), 10)
-                        },
-                        move = {
-                            x : p[0] - d.x,
-                            y : p[1] - d.y
-                        }
-                        ;
-
-                    if( move.x < 1 || (move.x*2 < d.width)) {
-                        d.x = p[0];
-                        d.width -= move.x;
-                    } else {
-                        d.width = move.x;
+                if ( self.isBlockCreationSelected) {
+                    if (self.isBlockCreated) {
+                        return;
                     }
+                    var s = self.svg.select("rect.block-creation");
+                    if(!s.empty()) {
+                        var p = d3.mouse(this),
+                            d = {
+                                x       : parseInt( s.attr("x"), 10),
+                                y       : parseInt( s.attr("y"), 10),
+                                width   : parseInt( s.attr("width"), 10),
+                                height  : parseInt( s.attr("height"), 10)
+                            },
+                            move = {
+                                x : p[0] - d.x,
+                                y : p[1] - d.y
+                            }
+                            ;
 
-                    if( move.y < 1 || (move.y*2<d.height)) {
-                        d.y = p[1];
-                        d.height -= move.y;
-                    } else {
-                        d.height = move.y;
-                    }
-
-                    s.attr(d);
-
-                    d3.selectAll('g.point.selection.selected').classed("selected", false);
-
-                    d3.selectAll('g.point > .inner').each( function(state_data) {
-                        var elementAbsoluteCoords = this.getBoundingClientRect();
-                        var dAbsoluteCoords = s[0][0].getBoundingClientRect();
-                        if(
-                            !d3.select(this).classed("selected") &&
-                            elementAbsoluteCoords.left >= dAbsoluteCoords.left && elementAbsoluteCoords.right <= dAbsoluteCoords.right &&
-                            elementAbsoluteCoords.top >= dAbsoluteCoords.top && elementAbsoluteCoords.bottom <= dAbsoluteCoords.bottom
-                        ) {
-                            d3.select(this.parentNode)
-                                .classed("selection", true)
-                                .classed("selected", true);
+                        if( move.x < 1 || (move.x*2 < d.width)) {
+                            d.x = p[0];
+                            d.width -= move.x;
+                        } else {
+                            d.width = move.x;
                         }
-                    });
+
+                        if( move.y < 1 || (move.y*2<d.height)) {
+                            d.y = p[1];
+                            d.height -= move.y;
+                        } else {
+                            d.height = move.y;
+                        }
+
+                        s.attr(d);
+                    }
+                } else if(self.isCircleCreationSelected) {
+                    if (self.isCircleCreated) {
+                        return;
+                    }
+                    var s = self.svg.select("circle.circle-creation");
+                    if(!s.empty()) {
+                        var p = d3.mouse(this),
+                            d = {
+                                x       : parseInt( s.attr("cx"), 10),
+                                y       : parseInt( s.attr("cy"), 10),
+                                r       : parseInt(s.attr("r"), 10 )
+                            },
+                            move = {
+                                x : p[0] - d.x,
+                                y : p[1] - d.y
+                            };
+
+                        if( move.x < 1 || (move.x*2 < d.r)) {
+                            d.x = p[0];
+                            d.r -= move.x;
+                        } else {
+                            d.r = move.x;
+                        }
+
+                        s.attr(d);
+                    }
+                } else {
+                    var s = self.svg.select("rect.selection");
+                    if (!s.empty()) {
+                        var p = d3.mouse(this),
+                            d = {
+                                x: parseInt(s.attr("x"), 10),
+                                y: parseInt(s.attr("y"), 10),
+                                width: parseInt(s.attr("width"), 10),
+                                height: parseInt(s.attr("height"), 10)
+                            },
+                            move = {
+                                x: p[0] - d.x,
+                                y: p[1] - d.y
+                            }
+                            ;
+
+                        if (move.x < 1 || (move.x * 2 < d.width)) {
+                            d.x = p[0];
+                            d.width -= move.x;
+                        } else {
+                            d.width = move.x;
+                        }
+
+                        if (move.y < 1 || (move.y * 2 < d.height)) {
+                            d.y = p[1];
+                            d.height -= move.y;
+                        } else {
+                            d.height = move.y;
+                        }
+
+                        s.attr(d);
+
+                        d3.selectAll('g.point.selection.selected').classed("selected", false);
+                        d3.selectAll('g.group > .selected').classed("selected", false);
+
+                        d3.selectAll('g.point > .inner').each(function (state_data) {
+                            var elementAbsoluteCoords = this.getBoundingClientRect();
+                            var dAbsoluteCoords = s[0][0].getBoundingClientRect();
+                            if (
+                                !d3.select(this).classed("selected") &&
+                                elementAbsoluteCoords.left >= dAbsoluteCoords.left && elementAbsoluteCoords.right <= dAbsoluteCoords.right &&
+                                elementAbsoluteCoords.top >= dAbsoluteCoords.top && elementAbsoluteCoords.bottom <= dAbsoluteCoords.bottom
+                            ) {
+                                d3.select(this.parentNode)
+                                    .classed("selection", true)
+                                    .classed("selected", true);
+                            }
+                        });
+                        d3.selectAll('g.group > g.tag').each(function (state_data) {
+                            var elementAbsoluteCoords = this.getBoundingClientRect();
+                            var dAbsoluteCoords = s[0][0].getBoundingClientRect();
+                            if (
+                                !d3.select(this).classed("selected") &&
+                                elementAbsoluteCoords.left >= dAbsoluteCoords.left && elementAbsoluteCoords.right <= dAbsoluteCoords.right &&
+                                elementAbsoluteCoords.top >= dAbsoluteCoords.top && elementAbsoluteCoords.bottom <= dAbsoluteCoords.bottom
+                            ) {
+                                d3.select(this)
+                                    .classed("selected", true);
+                            }
+                        });
+                        d3.selectAll('g.label').each(function (state_data) {
+                            var elementAbsoluteCoords = this.getBoundingClientRect();
+                            var dAbsoluteCoords = s[0][0].getBoundingClientRect();
+                            if (
+                                !d3.select(this).classed("selected") &&
+                                elementAbsoluteCoords.left >= dAbsoluteCoords.left && elementAbsoluteCoords.right <= dAbsoluteCoords.right &&
+                                elementAbsoluteCoords.top >= dAbsoluteCoords.top && elementAbsoluteCoords.bottom <= dAbsoluteCoords.bottom
+                            ) {
+                                d3.select(this)
+                                    .classed("selected", true);
+                            }
+                        });
+                    }
                 }
             })
             .on("mouseup", function() {
-                self.svg.selectAll("rect.selection").remove();
+                self.isEnterPressed = false;
+                d3.select("svg > rect.selection").remove();
                 d3.selectAll('g.point.selection').classed("selection", false);
+                if(self.isBlockCreationSelected) {
+                    self.isBlockCreated = true;
+                    var maxIdShape = _.max(self.shapes['ungrouped'], function (shape) {
+                        return shape.id;
+                    });
+                    var maxId = maxIdShape.id + 1 || 1;
+                    d3.selectAll('.custom-block').each(function () {
+                        var element = d3.select(this);
+                        var x = parseInt(element.attr('x'), 10),
+                            y = parseInt(element.attr('y'), 10),
+                            w = parseInt(element.attr('width'), 10),
+                            h = parseInt(element.attr('height'), 10);
+
+                        var obj = {id: maxId++, x: x, y: y, w: w, h: h, color: 'white', number: '', type: 'rect' }
+                        self.shapes['ungrouped'].push(obj);
+                        self._createShapes({ 'ungrouped': self.shapes['ungrouped'] });
+                        self.saveGraph();
+                        this.remove();
+                    })
+                }
+                if(self.isCircleCreationSelected) {
+                    self.isCircleCreated = true;
+                    var maxIdShape = _.max(self.shapes['ungrouped'], function (shape) {
+                        return shape.id;
+                    });
+                    var maxId = maxIdShape.id + 1 || 1;
+                    d3.selectAll('.custom-circle').each(function () {
+                        var element = d3.select(this);
+                        var x = parseInt(element.attr('cx'), 10),
+                            y = parseInt(element.attr('cy'), 10),
+                            r = parseInt(element.attr('r'), 10);
+
+                        var obj = { id: maxId++, x: x, y: y, r: r, w: r, h: r, color: 'white', number: '', type: 'circle' };
+
+                        self.shapes['ungrouped'].push(obj);
+                        self._createShapes({ 'ungrouped': self.shapes['ungrouped'] });
+                        self.saveGraph();
+                        this.remove();
+                    });
+                }
+                if(self.isTextCreationSelected) {
+                    var that = this;
+                    var p = d3.mouse(this);
+
+                    var inpObj = d3.select(this)
+                        .append("foreignObject")
+                        .attr('x', p[0])
+                        .attr('y', p[1])
+                        .attr('class', 'input-text')
+                        .append("xhtml:form");
+
+                    var inp = inpObj
+                        .append("input")
+                        .attr("style", "width: 200px;")
+                        .attr("value", function() {
+                            this.focus();
+                        })
+                        .on("blur", function() {
+                            var txt = inp.node().value;
+                            if ( ! self.isEnterPressed) {
+                                d3.select(that).select(".input-text").remove();
+                            }
+                            if( ! txt) return;
+
+                            var maxIdShape = _.max(self.shapes.labels, function (shape) {
+                                return shape.id;
+                            });
+                            var maxId = maxIdShape.id + 1 || 1;
+                            self.shapes['labels'].push({x: p[0], y: p[1], text: txt, type: 'text', id: maxId});
+                            self._createLabels({labels: self.shapes['labels']});
+                            self.saveGraph();
+
+                        })
+                        .on("keypress", function() {
+                            // IE fix
+                            if (!d3.event)
+                                d3.event = window.event;
+
+                            var e = d3.event;
+                            if (e.keyCode == 13) {
+                                self.isEnterPressed = true;
+                                if (typeof(e.cancelBubble) !== 'undefined') // IE
+                                    e.cancelBubble = true;
+                                if (e.stopPropagation)
+                                    e.stopPropagation();
+                                e.preventDefault();
+
+                                var txt = inp.node().value;
+                                d3.select(that).select(".input-text").remove();
+                            }
+                        });
+                    }
             })
             .on("mouseout", function() {
                 if( d3.event.relatedTarget.tagName=='HTML') {
-                    self.svg.selectAll("rect.selection").remove();
+                    d3.select("svg > rect.selection").remove();
                     d3.selectAll('g.point.selection').classed( "selection", false);
                 }
             });
@@ -306,7 +672,7 @@ function App() {}
             .on("mousewheel.zoom", null)
             .on("MozMousePixelScroll.zoom", null)
             .append('g')
-            .attr("transform", "translate(" + (jQuery('svg').width() / 4) + "," + this.margin.top * 2 + ")");
+            .attr("transform", "translate(" + 20 + "," + 20 + ")");
 
         this.toolSvg = d3.select(this.toolContainer)
             .append("svg")
@@ -348,82 +714,235 @@ function App() {}
         if(e.target.nodeName === 'svg' && !e.ctrlKey && !e.metaKey) {
             d3.selectAll( 'g.selected').classed( "selected", false);
         }
-    }
-    App.prototype._selectionEventDispatcher = function (e) {
+    };
+    /*App.prototype._selectionEventDispatcher = function (e) {
         if ( ! e.ctrlKey && e.metaKey) {
-            var g = e.target.parentNode,
+            /!*var g = e.target.parentNode,
                 isSelected = d3.select(g).classed("selected");
             d3.selectAll('g.point').classed("selected", false);
             d3.select(g).classed("selected", !isSelected);
-            g.parentNode.appendChild(g);
-        }
+            g.parentNode.appendChild(g);*!/
 
-    }
+            /!*var p = e.target,
+                isSelected = d3.select(p).classed("selected");
+            d3.selectAll('g.group > rect').classed("selected", false);
+            d3.select(p).classed("selected", !isSelected);
+            p.parentNode.appendChild(p);*!/
+        }
+    };*/
     App.prototype._drawFloor = function () {
         this.getData().then(function (response) {
             self.shapes = response.graphData;
             self.categories = response.categories;
             self._createShapes(self.shapes);
-            self._createTool('categories');
-            //self._createTool('ff');
+            self._createLabels(self.shapes);
+            self._createTool('tools');
         });
+    };
+    App.prototype._createLabels = function (data) {
+        if( ! data['labels']) return;
+        var i = 0;
+        self.label = self.graph.selectAll("svg>g>g.label").data(data['labels'], function (d) {
+            return d.id || (d.id = ++i);
+        });
+        self.labelEnter = self.label.enter().append("g")
+            .attr("class", "label")
+            .attr("cursor", "pointer")
+            .call(self.draggable());
+
+        /*self.labelEnter = self.label
+            .append("rect")
+            .attr("x", -4)
+            .attr("y", -4)
+            .attr("height", function (d) {
+                return 10;
+            })
+            .attr("width", 10)
+            .attr("fill", "black")
+            .attr("class", "outer");*/
+
+        self._textElement(self.labelEnter);
+
+        self.rotate(self.label);
+
+        self.labelExit = self.label.exit()
+            .remove();
+        self.labelExit.select("text")
+            .remove();
+
+    };
+    App.prototype._createTools = function () {
+        self._createTool('categories');
+        self._createTool('rowType');
+        self._createTool('numberOfSeats');
+        //self._createTool('ff');
     };
     App.prototype._createShapes = function (data, grouped, rotation) {
         if ( ! data ) return;
         var i = 0;
         var rotation = -1 * rotation || 0;
-        if ( ! _.isUndefined (grouped)) {
-            var groupCount = this.graph.selectAll("g.group").size();
-            var grpX = parseInt(this.width) / 10;
-            var grpY = this.margin.top * 2 + (40*groupCount);
+        if ( ! grouped || data.grouped.length != 0) {
+            _.each(data['grouped'], function(group) {
+                var grpX = group.groupCoords.x;
+                var grpY = group.groupCoords.y;
+                var rotate = group.groupCoords.rotate || 0;
+                var grpId =  group.groupId;
+                var tagX = group.groupTag.coords.x;
+                var tagY = group.groupTag.coords.y;
+                rotate = (rotation) ? rotation : rotate;
 
-            this.groupContainer = this.graph.append('g')
-                .attr("class", "group")
-                .attr("transform", function () {
-                    return d3.svg.transform()
-                        .translate(grpX, grpY)
-                        .rotate(rotation)();
-                    //return "translate(" + grpX + "," + grpY + ")"; 
+                self.groupContainer = self.graph.append('g')
+                    .attr("class", "group")
+                    .attr("grpId", grpId || Math.floor((Math.random() * 1000000) + 1))
+                    .attr("transform", function () {
+                        return d3.svg.transform()
+                            .translate(grpX, grpY)
+                            .rotate(rotate)();
+                    });
+
+                self.tag = self.groupContainer.append('g')
+                    .attr("class", "tag")
+                    .attr("transform", function () {
+                        return d3.svg.transform()
+                            .translate(tagX, tagY)
+                            .rotate(rotate)();
+                    })
+                    .on("click", function(d) {
+                        console.log('clic ked', this);
+                        jQuery('.edit-row-modal-sm').modal('show');
+                        self.currentGroupForEdit = this.parentNode.parentNode;
+                    })
+                    .call(self.groupDrag());
+
+                self.groupRect = self.tag
+                    .append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("height", self.tagHeight)
+                    .attr("width", self.tagWidth)
+                    .attr("fill", "black")
+                    .attr("class", "inner");
+
+                self.groupRect = self.tag
+                    .append("rect")
+                    .attr("x", -4)
+                    .attr("y", -4)
+                    .attr("height", 24)
+                    .attr("width", 18)
+                    .attr("fill", "black")
+                    .attr("class", "outer");
+
+                self.groupText = self.tag
+                    .append("text")
+                    .attr("x", 8)
+                    .attr("y", 14)
+                    .attr("text-anchor", "middle")
+                    .text(function () {
+                        return group.groupTag.name || '?';
+                    })
+                    .attr("fill", "white")
+                    .style("cursor", "pointer");
+
+                self.node = self.groupContainer.selectAll("g.point").data(group.groupElements, function(d) {
+                    return d.id || (d.id = ++i);
                 });
-            this.node = this.groupContainer.selectAll("g.group").data(data, function(d) {
-                return d.id || (d.id = ++i);
-            });
-        } else {
-            this.node = this.graph.selectAll("g.point").data(data, function(d) {
-                return d.id || (d.id = ++i);
+
+                self.nodeEnter = self.node.enter().append("g")
+                    .attr("class", "point")
+                    .attr("cursor", "pointer")
+                    .attr("y", -4)
+                    .call(self.draggable());
+
+                self.nodeEnter.append("rect")
+                    .attr("x", -4)
+                    .attr("y", -4)
+                    .attr("width", function (d) {
+                        return d.w + 10;
+                    })
+                    .attr("height", function (d) {
+                        return d.h + 10;
+                    })
+                    .attr("class", "outer");
+
+                self._shapeType(self.nodeEnter);
+
+                self.nodeEnter.append("text")
+                    .attr("x", function (d) {
+                        return d.w/2;
+                    })
+                    .attr("y", function (d) {
+                        return d.h/2 + 5;
+                    })
+                    .attr("text-anchor", "middle")
+                    .text(function(d){
+                        return d.number;
+                    })
+                    .style("fill-opacity", 1);
+
+                self.rotate(self.node);
+
+                self.nodeExit = self.node.exit()
+                    .remove();
+                self.nodeExit.select("text")
+                    .remove();
+                self.updateColorsAndCountsForTheElements();
             });
         }
+        if( ! _.isUndefined(data['ungrouped'])) {
+            this.node = this.graph.selectAll("svg>g>g.point").data(data['ungrouped'], function(d) {
+                return d.id || (d.id = ++i);
+            });
 
-        this.nodeEnter = this.node.enter().append("g")
-            .attr("class", "point")
-            .attr("cursor", "pointer")
-            .call(this.draggable());
+            this.nodeEnter = this.node.enter().append("g")
+                .attr("class", "point")
+                .attr("cursor", "pointer")
+                .call(this.draggable());
 
-        this.nodeEnter.append("rect")
-            .attr("x", -25)
-            .attr("y", -25)
-            .attr("width", 40 + 10)
-            .attr("height", 40 + 10)
-            .attr("class", "outer");
+            this.nodeEnter.append("rect")
+                .attr("x", function (d) {
+                    if(d.r) {
+                        return -(parseInt(d.w, 10)*2 + 10) / 2
+                    }
+                    return -4;
+                })
+                .attr("y", function (d) {
+                    if(d.r) {
+                        return -(parseInt(d.h, 10) * 2 + 10) / 2
+                    }
+                    return -4;
+                })
+                .attr("width", function (d) {
+                    if(d.r) {
+                        return parseInt(d.r)*2 + 10
+                    }
+                    return parseInt(d.w, 10) + 10;
+                })
+                .attr("height", function (d) {
+                    if(d.r) {
+                        return parseInt(d.r)*2 + 10
+                    }
+                    return parseInt(d.h, 10) + 10;
+                })
+                .attr("class", "outer");
 
-        this._shapeType(this.nodeEnter);
+            this._shapeType(this.nodeEnter);
 
-        this.nodeEnter.append("text")
-            .attr("x", 0)
-            .attr("y", ".35em")
-            .attr("text-anchor", "middle")
-            .text(function(d){
-                return d.number;
-            })
-            .style("fill-opacity", 1);
+            this.nodeEnter.append("text")
+                .attr("x", 0)
+                .attr("y", ".35em")
+                .attr("text-anchor", "middle")
+                .text(function(d){
+                    return d.number;
+                })
+                .style("fill-opacity", 1);
 
-        this.rotate(this.node);
+            this.rotate(this.node);
 
-        this.nodeExit = this.node.exit()
-            .remove();
-        this.nodeExit.select("text")
-            .remove();
-        this.updateColorsAndCountsForTheElements();
+            this.nodeExit = this.node.exit()
+                .remove();
+            this.nodeExit.select("text")
+                .remove();
+        }
     };
     App.prototype._createItemExamples = function () {
         var circle_container = d3.select('div.radio_circle label');
@@ -455,18 +974,37 @@ function App() {}
         element.append(function(d) {
             return document.createElementNS("http://www.w3.org/2000/svg", d.type);
         })
-            .attr("x", -20)
-            .attr("y", -20)
-            .attr("width", 40)
-            .attr("height", 40)
-            .attr("r", 20)
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("width", function (d) {
+                return d.w;
+            })
+            .attr("height", function (d) {
+                return d.h;
+            })
+            .attr("r", function (d) {
+                return d.r || 0;
+            })
             .attr("stroke", "black")
             .attr("stroke-width", "2")
             .attr("fill",function(d){
                return self._getElementColor(d.color);
              })
             .attr("class", "inner");
-        };
+    };
+    App.prototype._textElement = function (element) {
+        element.append(function(d) {
+            return document.createElementNS("http://www.w3.org/2000/svg", d.type);
+        })
+
+            .text(function (d) {
+                return d.text;
+            })
+            .attr("x", 0)
+            .attr("y", 0)
+            .attr("class", "inner")
+            .style("font-size","24px");
+    };
     App.prototype.zoomed = function () {
         self.graph.attr("transform",
             "translate(" + self.zoom.translate() + ")" +
@@ -528,6 +1066,24 @@ function App() {}
                 'createTool': function (toolEnter, name) {
                     self._createFfTool(toolEnter, name);
                 }
+            },
+            'rowType': {
+                'data': [{ x: 0, y: 0, w: 300, h: 200, name:'ROW TYPE' }],
+                'createTool': function (toolEnter, name) {
+                    self._createRowTypeTool(toolEnter, name);
+                }
+            },
+            'numberOfSeats': {
+                'data': [{ x: 0, y: 0, w: 300, h: 200, name:'NUMBER OF SEATS' }],
+                'createTool': function (toolEnter, name) {
+                    self._createNumberOfSeatsTool(toolEnter, name);
+                }
+            },
+            'tools': {
+                'data': [{ x: 0, y: 0, w: 300, h: 175, name: 'TOOLS' }],
+                'createTool': function (toolEnter, name) {
+                    self._createToolsTool(toolEnter, name);
+                }
             }
         };
         return toolsList[name];
@@ -545,7 +1101,7 @@ function App() {}
             .attr("class", "tool tool"+toolName);
     };
     App.prototype._createTool = function (toolName) {
-        var toolConfig = self._toolsConfig(toolName);
+        var toolConfig = this._toolsConfig(toolName);
         var toolEnter = this._createCommonTool(toolConfig, toolName);
 
         toolConfig.createTool(toolEnter, toolName);
@@ -571,17 +1127,49 @@ function App() {}
         this.toolExit.select("text")
             .remove();
     };
-    App.prototype._createCategoriesTool = function (element, tollName) {
-        this._createCategoriesToolContainer(element);
-        this._createCategoriesToolContainerCategoriesList(tollName);
-    };
     App.prototype.categoriesData = function (container) {
         return _.map(self.categories, function (category) {
-            return { x: container.x, y: container.y, parentW: container.w,w: 15, h:15, color: category.color, type: 'rect', name: category.name, price: category.price};
+            return { x: container.x, y: container.y, parentW: container.w, w: 15, h:15, color: category.color, type: 'rect', name: category.name, price: category.price};
         });
+    };
+    App.prototype._rowTypesData = function (container) {
+        var rowTypes = ['straight', 'curve'];
+        return _.map(rowTypes, function (row) {
+            return { x: container.x, y: container.y, parentW: container.w, name: row.toUpperCase(), h:30, w: '100%' };
+        })
+    };
+    App.prototype._numberOfSeatsData = function (container) {
+        var inputsList = ['# of Seats', 'First Seat #'];
+        return _.map(inputsList, function (input) {
+            return { x: container.x, y: container.y, parentW: container.w, name: input, h:30, w: 70 };
+        })
+    };
+    App.prototype._toolsToolData = function (container) {
+        var data = [
+            { icon: '\uf096', text: 'blocks' },
+            { icon: '\uf10c', text: 'circles' },
+            { icon: '\uf035', text: 'text' },
+            { icon: '\uf037', text: 'rows' }
+        ];
+
+        return _.map(data, function (item){
+            return {
+                'icon': { x: container.x, y: container.y, parentH: container.h,  parentW: container.w, name: item.icon },
+                'text': { x: container.x, y: container.y, parentH: container.h,  parentW: container.w, name: item.text },
+                'rect': { x: container.x, y: container.y, parentH: container.h,  parentW: container.w, h: 55, w: 55 }
+            }
+        });
+    };
+    App.prototype._deleteExtraTools = function () {
+      d3.selectAll('g.tool').each(function (tool) {
+          if (tool.name.toLowerCase() != 'tools') {
+              this.remove();
+          }
+      });
     };
 
     //Plugins Description Section
+
     App.prototype._createFfTool = function (element, toolName) {
         element
             .append("rect")
@@ -699,6 +1287,11 @@ function App() {}
             .style('fill', 'grey')
             .style('margin-top', '10px');
     };
+
+    App.prototype._createCategoriesTool = function (element, toolName) {
+        this._createCategoriesToolContainer(element);
+        this._createCategoriesToolContainerCategoriesList(toolName);
+    };
     App.prototype._createCategoriesToolContainer = function (element) {
         element
             .append("rect")
@@ -715,7 +1308,7 @@ function App() {}
                 return d.h + (d.h/10) * self.categories.length;
             })
             .attr("fill", 'white')
-            /*.attr("stroke", "gray")*/;
+            .attr("stroke", "gray");
 
         element
             .append("text")
@@ -764,6 +1357,29 @@ function App() {}
             .append('g')
             .attr("class", "category");
 
+        this.categoryEnter.append("rect")
+            .attr("x", function (d) {
+                return d.x;
+            })
+            .attr("y", function (d) {
+                return 75 - smallRectWidth*2 + d.y + 30 * d.id
+            })
+            .attr("width", '100%')
+            .attr("height", 15)
+            .attr("class", 'highlight')
+            .style("fill-opacity", 0.2)
+            .style('fill', 'white')
+            .style('cursor', 'pointer')
+            .on('click', function (d) {
+                var selectRects = d3.selectAll('g.category > .highlight')[0];
+                _.each(selectRects, function (rect) {
+                    d3.select(rect).style('fill', 'white');
+                });
+                d3.select(this).style('fill', 'blue');
+                var category = d3.select(this.parentNode).select('.categorytype');
+                self.selectedCategory = self._getCategory({color: category.attr('fill').replace('#', '')});
+            });
+
         this.categoryEnter
             .append("rect")
             .attr("x", function (d) {
@@ -780,7 +1396,8 @@ function App() {}
                 }
                 return d.color;
             })
-            .attr("stroke", "gray");
+            .attr("stroke", "gray")
+            .attr('class', 'categorytype');
 
         this.categoryEnter.append("text")
             .attr("x", function (d) {
@@ -825,6 +1442,337 @@ function App() {}
             .remove();
     };
 
+    App.prototype._createRowTypeTool = function (element, toolName) {
+        this._createRowTypeToolContainer(element);
+        this._createRowTypeToolContents(toolName);
+    };
+    App.prototype._createRowTypeToolContainer = function (element) {
+        element
+            .append("rect")
+            .attr("x", function (d) {
+                return d.x;
+            })
+            .attr("y", function (d) {
+                return d.y;
+            })
+            .attr("width", function (d) {
+                return d.w;
+            })
+            .attr("height", function (d) {
+                return d.h;
+            })
+            .attr("fill", 'white')
+            .attr("stroke", "gray");
+
+        element
+            .append("text")
+            .attr("x", function (d) {
+                return d.x + d.w/2;
+            })
+            .attr("y", function (d) {
+                return d.y + 30;
+            })
+            .attr("text-anchor", "middle")
+            .text(function(d){
+                return d.name;
+            })
+            .style("font-size", "22px")
+            .style("fill-opacity", 1);
+    };
+    App.prototype._createRowTypeToolContents = function (toolName) {
+        var i = 0;
+        var stepY = 40;
+        var containerData = this._toolsConfig(toolName).data[0];
+        var data = this._rowTypesData(containerData);
+
+        this.category = this.tool.selectAll("g.rowtypes").data(data, function(d) {
+            return d.id || (d.id = ++i);
+        });
+
+        this.categoryEnter = this.category.enter()
+            .append('g')
+            .attr("class", "rowtypes");
+
+        this.categoryEnter.append("rect")
+            .attr("x", function (d) {
+                return d.x;
+            })
+            .attr("y", function (d) {
+                return stepY * d.id;
+            })
+            .attr("width", function (d) {
+                return d.w;
+            })
+            .attr("height", function (d) {
+                return d.h;
+            })
+            .style("fill-opacity", 0.2)
+            .style('fill', 'none');
+
+        this.categoryEnter.append("text")
+            .attr("x", function (d) {
+                return d.x + d.parentW/2;
+            })
+            .attr("y", function (d) {
+                return d.id * stepY + stepY/2;
+            })
+            .attr("text-anchor", "middle")
+            .text(function (d) {
+                return d.name;
+            })
+            .style("font-size", "16px")
+            .style("fill-opacity", 1)
+            .style('fill', 'grey')
+            .style('cursor', 'pointer')
+            .on('click', function (d) {
+                var selectRects = d3.selectAll('g.rowtypes > rect')[0];
+                _.each(selectRects, function (rect, key) {
+                    if(key+1 == d.id) {
+                        d3.select(rect).style('fill', 'blue');
+                        self.selectedRowType = d.name;
+                    } else {
+                        d3.select(rect).style('fill', 'none');
+                    }
+                })
+            });
+
+        this.toolExit = this.tool.exit()
+            .remove();
+        this.toolExit.select("text")
+            .remove();
+    };
+
+    App.prototype._createNumberOfSeatsTool = function (element, toolName) {
+        this._createNumberOfSeatsToolContainer(element);
+        this._createNumberOfSeatsToolContents(toolName);
+    };
+    App.prototype._createNumberOfSeatsToolContainer = function (element) {
+        element
+            .append("rect")
+            .attr("x", function (d) {
+                return d.x;
+            })
+            .attr("y", function (d) {
+                return d.y;
+            })
+            .attr("width", function (d) {
+                return d.w;
+            })
+            .attr("height", function (d) {
+                return d.h;
+            })
+            .attr("fill", 'white')
+            .attr("stroke", "gray");
+
+        element
+            .append("text")
+            .attr("x", function (d) {
+                return d.x + d.w/2;
+            })
+            .attr("y", function (d) {
+                return d.y + 30;
+            })
+            .attr("text-anchor", "middle")
+            .text(function(d){
+                return d.name;
+            })
+            .style("font-size", "22px")
+            .style("fill-opacity", 1);
+
+        element
+            .append("foreignObject")
+            .attr("x", function (d) {
+                return d.x + 8;
+            })
+            .attr("y", function (d) {
+                return d.h - 50;
+            })
+            .attr("width", function (d) {
+                return d.w - 20;
+            })
+            .attr("height", 50)
+            .html('<button type="button" class="btn btn-primary btn-lg btn-block">GENERATE</button>')
+            .on('click', function (d) {
+                var shapesQty = jQuery('#ctrl1').val();
+                var firstSeat = jQuery('#ctrl2').val();
+                if( ! self.selectedCategory) {
+                    alert('Please select category');
+                    return;
+                }
+                if( ! self.selectedRowType) {
+                    alert('Please select row type');
+                    return;
+                }
+
+                self._generateRow(shapesQty, firstSeat);
+            })
+    };
+    App.prototype._createNumberOfSeatsToolContents = function (toolName) {
+        var i = 0;
+        var inputWidth = 120;
+        var containerData = this._toolsConfig(toolName).data[0];
+        var data = this._numberOfSeatsData(containerData);
+
+        this.category = this.tool.selectAll("g.numberofseats").data(data, function(d) {
+            return d.id || (d.id = ++i);
+        });
+
+        this.categoryEnter = this.category.enter()
+            .append('g')
+            .attr("class", "numberofseats");
+
+        this.categoryEnter
+            .append("foreignObject")
+            .attr("x", function (d) {
+                return (inputWidth * (d.id-1)) + d.x + 30;
+            })
+            .attr("y", function (d) {
+                return d.h + 50;
+            })
+            .attr("width", inputWidth)
+            .attr("height", 50)
+            .html(function (d) {
+                return '<input class="form-control" type="text" id="ctrl' + d.id + '" placeholder="' + d.name + '" />'
+            })
+    };
+
+    App.prototype._createToolsTool = function (element, toolName) {
+        this._createToolsToolContainer(element);
+        this._createToolsToolContents(toolName)
+    };
+    App.prototype._createToolsToolContainer = function (element) {
+        element
+            .append("rect")
+            .attr("x", function (d) {
+                return d.x;
+            })
+            .attr("y", function (d) {
+                return d.y;
+            })
+            .attr("width", function (d) {
+                return d.w;
+            })
+            .attr("height", function (d) {
+                return d.h;
+            })
+            .attr("fill", 'white')
+            .attr("stroke", "gray");
+
+        element
+            .append("text")
+            .attr("x", function (d) {
+                return d.x + d.w/2;
+            })
+            .attr("y", function (d) {
+                return d.y + 30;
+            })
+            .attr("text-anchor", "middle")
+            .text(function(d){
+                return d.name;
+            })
+            .style("font-size", "22px")
+            .style("fill-opacity", 1);
+    };
+    App.prototype._createToolsToolContents = function (toolName) {
+        var i = 0;
+        var containerData = this._toolsConfig(toolName).data[0];
+        var data = this._toolsToolData(containerData);
+
+        this.toolsTool = this.tool.selectAll("g.instrument").data(data, function(d) {
+            return d.id || (d.id = ++i);
+        });
+
+        this.toolsToolEnter = this.toolsTool.enter()
+            .append('g')
+            .attr("class", "instrument")
+            .on('click', function (d) {
+                var selectRects = d3.selectAll('g.instrument > .toolItem')[0];
+                var current_color = d3.select(this).select('rect').style('fill');
+                _.each(selectRects, function (rect) {
+                    d3.select(rect).style('fill', 'white');
+                });
+                if ( current_color != 'rgb(0, 0, 255)' ) {
+                    d3.select(this).select('rect').style('fill', 'blue');
+                }
+                if (d.text.name == 'rows') {
+                    self.isRowsToolSelected = !self.isRowsToolSelected;
+                    self.isBlockCreationSelected = false;
+                    self.isCircleCreationSelected = false;
+                    self.isTextCreationSelected = false;
+                    if(self.isRowsToolSelected) {
+                        return self._createTools();
+                    } else {
+                        self._deleteExtraTools();
+                    }
+                }
+                if (d.text.name == 'blocks') {
+                    self.isCircleCreationSelected = false;
+                    self.isTextCreationSelected = false;
+                    self.isRowsToolSelected = false;
+                    self.isBlockCreationSelected = !self.isBlockCreationSelected;
+                }
+                if (d.text.name == 'circles') {
+                    self.isBlockCreationSelected = false;
+                    self.isTextCreationSelected = false;
+                    self.isRowsToolSelected = false;
+                    self.isCircleCreationSelected = !self.isCircleCreationSelected;
+                }
+                if (d.text.name == 'text') {
+                    self.isBlockCreationSelected = false;
+                    self.isCircleCreationSelected = false;
+                    self.isRowsToolSelected = false;
+                    self.isTextCreationSelected = !self.isTextCreationSelected;
+                }
+                self._deleteExtraTools();
+            });
+
+        this.toolsToolEnter.append("rect")
+            .attr("x", function (d) {
+                return d.rect.x + d.rect.w * (d.id-1) + 25 + 10*(d.id-1);
+            })
+            .attr("y", function (d) {
+                return d.rect.y + 60
+            })
+            .attr("width", function (d) {
+                return d.rect.w
+            })
+            .attr("height", function (d) {
+                return d.rect.h
+            })
+            .attr('class', 'toolItem')
+            .style('fill', 'white')
+            .style("fill-opacity", 0.2)
+            .style('cursor', 'pointer')
+            .style('stroke', 'grey')
+            .style('', 'center');
+
+        this.toolsToolEnter.append("text")
+            .attr("x", function (d) {
+                return d.rect.x + d.rect.w * (d.id-1) + 25 + 10*(d.id-1) + d.rect.w/2;
+            })
+            .attr("y", function (d) {
+                return d.icon.y + d.rect.h/2 + 70;
+            })
+            .attr("text-anchor", "middle")
+            .attr('font-family', 'FontAwesome')
+            .attr('font-size',  '2em')
+            .style('cursor', 'pointer')
+            .text(function(d) { return d.icon.name });
+
+        this.toolsToolEnter.append("text")
+            .attr("x", function (d) {
+                return d.rect.x + d.rect.w * (d.id-1) + 25 + 10*(d.id-1) + d.rect.w/2;
+            })
+            .attr("y", function (d) {
+                return d.icon.y + d.rect.h + 78;
+            })
+            .attr("text-anchor", "middle")
+            .attr('font-family', 'FontAwesome')
+            .attr('font-size',  '0.8em')
+            .style('cursor', 'pointer')
+            .text(function(d) { return d.text.name.toUpperCase() });
+    };
+
     //Save/Load Data Manipulation
     App.prototype.resetGraph = function () {
         localStorage.setItem(this.graphId(), null);
@@ -837,6 +1785,11 @@ function App() {}
         };
         this._saveGraphToLocalStorage(graph);
         this._saveGraphDataToInput(graph);
+
+        this.getData().then(function (response) {
+            self.shapes = response.graphData;
+            self.categories = response.categories;
+        });
     };
     App.prototype.exportGraph = function () {
         this._saveGraphToExternalStorage(this.selectAllShapes());
@@ -867,24 +1820,46 @@ function App() {}
             var that = this;
             setTimeout(function() {
                 var data = {
-                    'graphData':[
-                        { x: 100, y: 10, w: 40, h:40, color: 'red', number: '200', type: 'rect' },
-                        { x: 140, y: 10, w: 40, h:40, color: 'red', number: '201', type: 'rect' },
-                        { x: 180, y: 10, w: 40, h:40, color: 'red', number: '202', type: 'rect' },
-                        { x: 220, y: 10, w: 40, h:40, color: 'red', number: '203', type: 'rect' },
-                        { x: 260, y: 10, w: 40, h:40, color: 'red', number: '203', type: 'rect' },
-                        { x: 300, y: 10, w: 40, h:40, color: 'red', number: '203', type: 'rect' },
-                        //Below is a rotate example configuration
-                        //{ x: 10, y: 10, w: 40, h:40, color: 'green', number: '312', rotate: 45, type: 'rect' },
-                        { x: 10, y: 30, w: 40, h:40, color: 'green', number: '312', type: 'rect' },
-                        { x: 50, y: 30, w: 40, h:40, color: 'green', number: '313', type: 'rect' },
-                        { x: 90, y: 30, w: 40, h:40, color: 'green', number: '314', type: 'rect' },
-                        { x: 130, y: 30, w: 40, h:40, color: 'green', number: '315', type: 'rect' },
-                        { x: 10, y: 0, w: 40, h:40, color: 'green', number: '112', type: 'rect' },
-                        { x: 50, y: 0, w: 40, h:40, color: 'green', number: '113', type: 'rect' },
-                        { x: 90, y: 0, w: 40, h:40, color: 'green', number: '114', type: 'rect' },
-                        { x: 130, y: 0, w: 40, h:40, color: 'green', number: '115', type: 'rect' }
-                    ],
+                    'graphData': {
+                        'labels': [
+                            { x: 823, y: 209, text: 'test', type: 'text' }
+                        ],
+                        'ungrouped': [
+                            /*{ x: 100, y: 10, w: 40, h:40, color: 'red', number: '200', type: 'rect' },
+                            { x: 140, y: 10, w: 40, h:40, color: 'red', number: '201', type: 'rect' },
+                            { x: 180, y: 10, w: 40, h:40, color: 'red', number: '202', type: 'rect' },
+                            { x: 220, y: 10, w: 40, h:40, color: 'red', number: '203', type: 'rect' },
+                            { x: 260, y: 10, w: 40, h:40, color: 'red', number: '203', type: 'rect' },
+                            { x: 300, y: 10, w: 40, h:40, color: 'red', number: '203', type: 'rect' },
+                            //Below is a rotate example configuration
+                            //{ x: 10, y: 10, w: 40, h:40, color: 'green', number: '312', rotate: 45, type: 'rect' },
+                            { x: 10, y: 30, w: 40, h:40, color: 'green', number: '312', type: 'rect' },
+                            { x: 50, y: 30, w: 40, h:40, color: 'green', number: '313', type: 'rect' },
+                            { x: 90, y: 30, w: 40, h:40, color: 'green', number: '314', type: 'rect' },
+                            { x: 130, y: 30, w: 40, h:40, color: 'green', number: '315', type: 'rect' },
+                            { x: 10, y: 0, w: 40, h:40, color: 'green', number: '112', type: 'rect' },
+                            { x: 50, y: 0, w: 40, h:40, color: 'green', number: '113', type: 'rect' },
+                            { x: 90, y: 0, w: 40, h:40, color: 'green', number: '114', type: 'rect' },
+                            { x: 130, y: 0, w: 40, h:40, color: 'green', number: '115', type: 'rect' }*/
+                        ],
+                        'grouped': [
+                            /*{
+                                'groupTag': {
+                                    'name': '?',
+                                    'coords': {
+                                        x:-23,
+                                        y: -20
+                                    }
+                                },
+                                'groupCoords' : { x: 30, y:200 },
+                                'groupElements': [
+                                    { x: 130, y: 0, w: 40, h:40, color: 'green', number: '456', type: 'rect' },
+                                    { x: 130, y: 30, w: 40, h:40, color: 'green', number: '787', type: 'rect' },
+                                    { x: 10, y: 0, w: 40, h:40, color: 'green', number: '565', type: 'rect' }
+                                ]
+                            }*/
+                        ]
+                    },
                     'categories': [
                         {
                             name: 'TIER 1',
@@ -908,7 +1883,7 @@ function App() {}
             if(data) {
                 this.resolve(JSON.parse(data));
             }
-            this.resolve({ graphData: [], categories: [] });
+            this.resolve({ graphData: { 'labels': [], 'ungrouped': [], 'grouped': [] }, categories: [] });
         });
     };
     App.prototype.getData = function () {
@@ -953,18 +1928,63 @@ function App() {}
             this.categories.push(category);
             this.saveGraph();
             d3.selectAll('.tool').remove();
-            this._drawFloor();
+            self._createTools();
         }
     };
     App.prototype.createDummyShape = function (type, shapesLength) {
-    return { x: 10 + 40 * shapesLength, y: 10, w: 40, h:40, color: 'red', number: Math.floor((Math.random() * 500) + 251), type: type };
+        var shape = {
+            w: 40,
+            h: 40,
+            color: 'red',
+            number: Math.floor((Math.random() * 500) + 251),
+            type: type
+        };
+    return { x: shape.w * shapesLength, y: 0, w: shape.w, h: shape.h, color: shape.color, number: shape.number, type: shape.type };
 };
     App.prototype.selectAllShapes = function () {
         var shapes = [];
-        d3.selectAll('g.point').each(function (d) {
+        var groups = [];
+        var result = {};
+        var labels = [];
+
+        d3.selectAll('svg>g>g.point').each(function (d) {
             shapes.push(d);
         });
-        return shapes;
+        d3.selectAll('svg>g>g.label').each(function (d) {
+            labels.push(d);
+        });
+        d3.selectAll('svg>g>g.group').each(function (g) {
+            var elements = [];
+            var coords = d3.transform(d3.select(this).attr("transform"));
+            var grpX = coords.translate[0];
+            var grpY = coords.translate[1];
+            var rotate = coords.rotate;
+            var groupTagName = d3.select(this).select('text').text();
+            var groupTagCoords = d3.transform(d3.select(this).select('g.tag').attr("transform"));
+            var groupId = d3.select(this).attr('grpId');
+
+            d3.select(this).selectAll('g.point').each(function(d) {
+                elements.push(d);
+            });
+
+            groups.push({
+                'groupTag': {
+                    'name': groupTagName,
+                    'coords': {
+                        x: groupTagCoords.translate[0],
+                        y: groupTagCoords.translate[1]
+                    }
+                },
+                'groupCoords' : { x: grpX, y: grpY, rotate: rotate },
+                'groupElements': elements,
+                'groupId': groupId || Math.floor((Math.random() * 1000000) + 1)
+            });
+        });
+
+        result.ungrouped = shapes;
+        result.grouped = groups;
+        result.labels = labels;
+        return  result;
     };
     App.prototype.getCategoriesInfo = function () {
         var shapesList = this.selectAllShapes();
@@ -1012,4 +2032,19 @@ function App() {}
             .pluck('color')
             .unique()
             .value();
+    };
+    App.prototype._getCategory = function (param) {
+        return _.where(self.categories, param)[0];
+    };
+
+    App.prototype._generateRow = function (shapesQty, firstSeat) {
+        var rowTypesLogic = {
+            'straight': function (shapesQty, rowsQty, firstSeat, category) {
+                self.natCreateSeatsLine(shapesQty, rowsQty, firstSeat, 0, 0, category);
+            },
+            'curve': function () {
+                alert('Curve row types are currently off');
+            }
+        };
+        rowTypesLogic[self.selectedRowType.toLowerCase()](shapesQty, 1, firstSeat, self.selectedCategory.name);
     };

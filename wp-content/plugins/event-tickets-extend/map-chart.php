@@ -54,7 +54,7 @@
     }
 
     var config = {
-        dataProvider: 'fakeData',
+        dataProvider: 'serverData',
         margin: { top: 100, right: 120, bottom: 100, left: 120 },
         width: '100%',
         height: '600',

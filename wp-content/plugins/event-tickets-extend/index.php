@@ -28,6 +28,11 @@ class Tribe__Tickets__Main__Extend {
     public $plugin_url;
     public $plugin_slug;
 
+    //TODO: refactor this
+    public $my_venues;
+    public $my_maps;
+    public $selected_map_id;
+
     private $has_initialized = false;
 
     /**
@@ -75,70 +80,129 @@ class Tribe__Tickets__Main__Extend {
             return;
         }
 
-        $this->init();
+        add_action( 'init', array( $this, 'init' ) );
+
         $this->hooks();
         
         $this->has_initialized = true;
     }
 
     public function init() {
+        $this->register_map_post_type();
         $this->getEventData();
         // $this->register_resources();
-        // $this->register_post_types();
     }
 
     public function hooks() {
-        add_action( 'admin_enqueue_scripts', array( $this, 'events_my_enqueue') );
-        add_action( 'wp_insert_post', array( $this, 'prepeare_insert_post' ), 10, 3 );
         add_filter( 'manage_tribe_events_page_tickets-attendees_columns', array( $this, 'add_my_custom_attendee_column'), 20 );
         add_filter( 'tribe_events_tickets_attendees_table_column', array( $this,'populate_my_custom_attendee_column'), 10, 3 );
 
-        // add_filter( 'tribe_events_register_venue_type_args', array( $this,'tribe_venues_custom_field_support') );
-        // add_action( 'tribe_events_single_venue_before_upcoming_events', array( $this,'show_wp_custom_fields') );
+        add_action( 'admin_enqueue_scripts', array( $this, 'prepeare_admin_pages') );
+        add_action( 'wp_insert_post', array( $this, 'prepeare_insert_post' ), 10, 3 );
         add_action( 'tribe_after_location_details', array( $this, 'displayEventMapDropdown' ) );
-
-        // add_filter('tribe_events_meta_box_template', array($this, 'change_event_mb_tpl'));
-        // add_filter('tribe_events_tickets_modules', array($this, 'change_event_mb_tpl'));
-
         add_action( 'tribe_events_single_meta_venue_section_end', array( $this,'show_wp_map_chart'));
-        add_action( 'wp_enqueue_scripts', array($this, 'my_enqueue') );
+        add_action( 'wp_enqueue_scripts', array($this, 'event_enqueue_hook') );
+
+        add_filter( 'wp_insert_post_data' , array($this, 'filter_post_data') , '99', 2 );
+        add_action( 'save_post', array($this, 'map_post_save_meta'), 1, 2 );
     }
 
-    public function my_enqueue() {
+    public function register_map_post_type() {
+        $labels = array(
+            'name' => 'Chart Maps',
+            'singular_name' => 'Chart Map',
+            'add_new' => 'Add map',
+            'all_items' => 'All maps',
+            'add_new_item' => 'Add map',
+            'edit_item' => 'Edit map',
+            'new_item' => 'New map',
+            'view_item' => 'View map',
+            'search_items' => 'Search maps',
+            'not_found' => 'No maps found',
+            'not_found_in_trash' => 'No maps found in trash',
+            'parent_item_colon' => 'Parent map'
+        );
+        $args = array(
+            'labels' => $labels,
+            'public' => true,
+            'has_archive' => true,
+            'publicly_queryable' => true,
+            'query_var' => true,
+            'rewrite' => true,
+            'capability_type' => 'post',
+            'hierarchical' => false,
+            'supports' => array(
+                'title',
+                'editor',
+                'revisions',
+            ),
+            'menu_position' => 5,
+            'menu_icon' => 'dashicons-images-alt2',
+            'exclude_from_search' => false,
+            'register_meta_box_cb' => array($this, 'map_add_post_type_metabox')
+        );
+        register_post_type( 'map_seats', $args );
+    }
+
+    public function map_add_post_type_metabox() {
+        add_meta_box( 'map_metabox', 'Map Editor', array($this, 'map_metabox'), 'map_seats', 'normal' );
+    }
+
+    public function map_metabox() {
+        global $post;
+
+        // Noncename needed to verify where the data originated
+        echo '<input type="hidden" name="map_post_noncename" value="' . wp_create_nonce( plugin_basename(__FILE__) ) . '" />';
+
+        $selected_venue_id = get_post_meta($post->ID, '_map_venue_id', true);
+
+        $my_venue_ids     = array();
+        $my_venues        = false;
+        $my_venue_options = '';
+
+        $my_venues = $this->get_post_info(
+            'tribe_venue',
+            null,
+            array(
+                'post_status' => array(
+                    'publish',
+                    'draft',
+                    'private',
+                    'pending',
+                )
+            )
+        );
+
+        if ( ! empty( $my_venues ) ) {
+            foreach ( $my_venues as $my_venue ) {
+                $my_venue_ids[] = $my_venue->ID;
+                $venue_title    = wp_kses( get_the_title( $my_venue->ID ), array() );
+                $my_venue_options .= '<option data-address="' . esc_attr( $this->fullAddressString( $my_venue->ID ) ) . '" value="' . esc_attr( $my_venue->ID ) . '"';
+                $my_venue_options .= selected( $selected_venue_id, $my_venue->ID, false );
+                $my_venue_options .= '>' . $venue_title . '</option>';
+            }
+        }
+
+        if ( $my_venues ) {
+            // $venue_pto = get_post_type_object('tribe_venue');
+            echo '<label style="min-width:150px;" for="saved_venue"><b>Choose venue:</b></label>';
+            echo '<select class="chosen venue-dropdown" style="min-width:150px;" name="' . esc_attr( 'venue_id' ) . '" id="saved_venue">';
+            echo $my_venue_options;
+            echo '</select><br />';
+        } else {
+            echo '<p class="nosaved">' . esc_html__( 'No saved %s exists.') . '</p>';
+        }
+        include self::instance()->plugin_path . 'map-edit.php';
+    }
+
+    public function event_enqueue_hook() {
         global $post_type;
 
         if ( 'tribe_events' != $post_type ) {
             return;
         }
-
-        // comment out the next two lines to load the local copy of jQuery
-        wp_deregister_script('jquery');
-        wp_register_script('jquery', 'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js', false, '2.2.1');
-        wp_enqueue_script('jquery');
-
-        // comment out the next two lines to load the local copy of Underscore
-        wp_deregister_script('underscore');
-        wp_register_script('underscore', 'https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js', false, '1.8.3');
-        wp_enqueue_script('underscore');
-
-        wp_enqueue_script( 'bootstrap.min.js', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/js/bootstrap.min.js' );
-        wp_enqueue_script( 'd3.min.js', plugin_dir_url( __FILE__ ) . '/vendor/d3/d3.min.js');
-        wp_enqueue_script( 'd3-transform.js', plugin_dir_url( __FILE__ ) . '/vendor/d3-transform/src/d3-transform.js' );
-        wp_enqueue_script( 'jquery-ui.min.js', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/jquery-ui.min.js' );
-        wp_enqueue_script( 'jquery.colorpicker.js', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.js' );
-        wp_enqueue_script( 'map_seats_app', plugin_dir_url( __FILE__ ) . '/js/app.js', array('jquery') );
-
-        wp_register_style( 'bootstrap_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap.min.css', false, '1.0.0' );
-        wp_register_style( 'bootstrap_theme_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap-theme.min.css', false, '1.0.0' );
-        wp_register_style( 'custom_wp_admin_css', plugin_dir_url( __FILE__ ) . '/css/main.css', false, '1.0.0' );
-        wp_register_style( 'jquery_ui_min_css', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/themes/ui-lightness/jquery-ui.css', false, '1.0.0' );
-        wp_register_style( 'colorpicker_min_css', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.css', false, '1.0.0' );
-
-        wp_enqueue_style( 'bootstrap_min_css' );
-        wp_enqueue_style( 'bootstrap_theme_min_css' );
-        wp_enqueue_style( 'jquery_ui_min_css' );
-        wp_enqueue_style( 'colorpicker_min_css' );
-        wp_enqueue_style( 'custom_wp_admin_css' );
+        
+        $this->map_seats_enqueue();
     }
 
     public function show_wp_map_chart() {
@@ -163,8 +227,19 @@ class Tribe__Tickets__Main__Extend {
 
         $seatsAttendeeMap = array_map("getSeatsInfo", $attendees);
 
-
         include self::instance()->plugin_path . 'map-chart.php';
+    }
+
+    public function prepeare_admin_pages($hook) {
+        global $post_type;
+        switch ($post_type) {
+            case 'tribe_events':
+                $this->tribe_events_enqueue($hook);
+                break;
+            case 'map_seats':
+                $this->map_seats_enqueue($hook);
+                break;
+        }
     }
 
     public function getEventData() {
@@ -205,9 +280,8 @@ class Tribe__Tickets__Main__Extend {
         );
     }
 
-    public function events_my_enqueue($hook) {
-        global $post_type;
-        if ( 'tribe_events' != $post_type || ('post-new.php' != $hook && 'post.php' != $hook ) ) {
+    public function tribe_events_enqueue($hook) {
+        if ('post-new.php' != $hook && 'post.php' != $hook ) {
             return;
         }
 
@@ -221,6 +295,47 @@ class Tribe__Tickets__Main__Extend {
                 'selected_map' => $this->selected_map_id
             ) 
         );
+    }
+
+    public function map_seats_hook($hook) {
+        if ('post-new.php' != $hook && 'post.php' != $hook ) {
+            return;
+        }
+
+        $this->map_seats_enqueue();
+    }
+
+    public function map_seats_enqueue() {
+        // comment out the next two lines to load the local copy of jQuery
+        wp_deregister_script('jquery');
+        wp_register_script('jquery', 'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js', false, '2.2.1');
+        wp_enqueue_script('jquery');
+
+        // comment out the next two lines to load the local copy of Underscore
+        wp_deregister_script('underscore');
+        wp_register_script('underscore', 'https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js', false, '1.8.3');
+        wp_enqueue_script('underscore');
+
+        wp_enqueue_script( 'bootstrap.min.js', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/js/bootstrap.min.js' );
+        wp_enqueue_script( 'd3.min.js', plugin_dir_url( __FILE__ ) . '/vendor/d3/d3.min.js');
+        wp_enqueue_script( 'd3-transform.js', plugin_dir_url( __FILE__ ) . '/vendor/d3-transform/src/d3-transform.js' );
+        wp_enqueue_script( 'jquery-ui.min.js', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/jquery-ui.min.js' );
+        wp_enqueue_script( 'jquery.colorpicker.js', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.js' );
+        wp_enqueue_script( 'map_seats_app', plugin_dir_url( __FILE__ ) . '/js/app.js', array('jquery') );
+
+        wp_register_style( 'bootstrap_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap.min.css', false, '1.0.0' );
+        wp_register_style( 'bootstrap_theme_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap-theme.min.css', false, '1.0.0' );
+        wp_register_style( 'custom_wp_admin_css', plugin_dir_url( __FILE__ ) . '/css/main.css', false, '1.0.0' );
+        wp_register_style( 'jquery_ui_min_css', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/themes/ui-lightness/jquery-ui.css', false, '1.0.0' );
+        wp_register_style( 'colorpicker_min_css', plugin_dir_url( __FILE__ ) . '/vendor/colorpicker/jquery.colorpicker.css', false, '1.0.0' );
+        wp_register_style( 'font_awesome_min_css', 'https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css', false, '4.5.0' );
+
+        wp_enqueue_style( 'bootstrap_min_css' );
+        wp_enqueue_style( 'bootstrap_theme_min_css' );
+        wp_enqueue_style( 'jquery_ui_min_css' );
+        wp_enqueue_style( 'colorpicker_min_css' );
+        wp_enqueue_style( 'custom_wp_admin_css' );
+        wp_enqueue_style( 'font_awesome_min_css' );
     }
 
     public function displayEventMapDropdown() {
@@ -363,5 +478,90 @@ class Tribe__Tickets__Main__Extend {
         ) );
 
         return $query->posts;
+    }
+
+    public function filter_post_data( $data , $postarr ) {
+        if (($postarr['post_type'] == 'map_seats') && ($postarr['post_status'] != 'auto-draft')) {
+            $data['post_content'] = (string) $postarr['graphData'];
+        }
+        return $data;
+    }
+
+    public function map_post_save_meta( $post_id, $post ) {
+ 
+        /*
+         * We need to verify this came from our screen and with proper authorization,
+         * because the save_post action can be triggered at other times.
+         */
+ 
+        if ( ! isset( $_POST['map_post_noncename'] ) ) { // Check if our nonce is set.
+            return;
+        }
+ 
+        // verify this came from the our screen and with proper authorization,
+        // because save_post can be triggered at other times
+        if( !wp_verify_nonce( $_POST['map_post_noncename'], plugin_basename(__FILE__) ) ) {
+            return $post->ID;
+        }
+ 
+        // is the user allowed to edit the post or page?
+        if( ! current_user_can( 'edit_post', $post->ID )){
+            return $post->ID;
+        }
+        // ok, we're authenticated: we need to find and save the data
+        // we'll put it into an array to make it easier to loop though
+
+        $map_post_meta['_map_venue_id'] = $_POST['venue_id'];
+ 
+        // add values as custom fields
+        foreach( $map_post_meta as $key => $value ) { // cycle through the $map_post_meta array
+            // if( $post->post_type == 'revision' ) return; // don't store custom data twice
+            $value = implode(',', (array)$value); // if $value is an array, make it a CSV (unlikely)
+            if( get_post_meta( $post->ID, $key, FALSE ) ) { // if the custom field already has a value
+                update_post_meta($post->ID, $key, $value);
+            } else { // if the custom field doesn't have a value
+                add_post_meta( $post->ID, $key, $value );
+            }
+            if( !$value ) { // delete if blank
+                delete_post_meta( $post->ID, $key );
+            }
+        }
+    }
+
+    public function fullAddressString( $postId = null ) {
+        $address = '';
+        if ( tribe_get_address( $postId ) ) {
+            $address .= tribe_get_address( $postId );
+        }
+
+        if ( tribe_get_city( $postId ) ) {
+            if ( $address != '' ) {
+                $address .= ', ';
+            }
+            $address .= tribe_get_city( $postId );
+        }
+
+        if ( tribe_get_region( $postId ) ) {
+            if ( $address != '' ) {
+                $address .= ', ';
+            }
+            $address .= tribe_get_region( $postId );
+        }
+
+        if ( tribe_get_zip( $postId ) ) {
+            if ( $address != '' ) {
+                $address .= ', ';
+            }
+            $address .= tribe_get_zip( $postId );
+        }
+
+        if ( tribe_get_country( $postId ) ) {
+            if ( $address != '' ) {
+                $address .= ', ';
+            }
+            $address .= tribe_get_country( $postId );
+        }
+
+        return $address;
     }
 }
