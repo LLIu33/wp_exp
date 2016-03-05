@@ -17,13 +17,6 @@ function my_enqueue($hook) {
         return;
     }
 
-    function FontAwesome_icons() {
-    echo '<link href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css"  rel="stylesheet">';
-}
-
-add_action('admin_head', 'FontAwesome_icons');
-add_action('wp_head', 'FontAwesome_icons');
-
     // comment out the next two lines to load the local copy of jQuery
     wp_deregister_script('jquery');
     wp_register_script('jquery', 'https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.1/jquery.min.js', false, '2.2.1');
@@ -271,7 +264,7 @@ if( ! function_exists( 'map_create_post_type' ) ) :
         </div>
         <input type="hidden" id="graphData" name="graphData" />
         <input type="hidden" id="getData" name="getData"  value='<?php echo $post->post_content ?>'/>
-        
+
         <div class="modal fade add-category-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
             <div class="modal-dialog modal-sm">
                 <div class="modal-content">
