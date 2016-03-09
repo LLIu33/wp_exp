@@ -10,7 +10,7 @@
         </div>
     </div>
     <input type="hidden" id="graphData" name="graphData" />
-    <input type="hidden" id="getData" name="getData" />
+    <input type="hidden" id="getData" name="getData" value='<?php echo $map_info->post_content; ?>' />
 </div>
 
 <style>

@@ -227,6 +227,9 @@ class Tribe__Tickets__Main__Extend {
 
         $seatsAttendeeMap = array_map("getSeatsInfo", $attendees);
 
+        $map_id = get_post_meta($event_id, '_map_id', true);
+        $map_info = get_post($map_id);
+
         include self::instance()->plugin_path . 'map-chart.php';
     }
 
