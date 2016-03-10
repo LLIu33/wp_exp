@@ -49,29 +49,10 @@
 
         $('form.cart .tribe-events-tickets').before(seatsInput);
 
-        // $('g.point').click(function(){
-        //     var el = $(this);
-        //     var result = geSeatValue(el);
-        //     updateSeatsResult(result, seatsInput);
-        // });
+        $('g.point').click(function(){
+            var result = Client.getSelectedSeats();
+            seatsInput.val(JSON.stringify(result));
+        });
     });
-
-    // function geSeatValue(el) {
-    //     var val = el.find('text').text();
-    //     var color = el.find('rect.inner').attr('fill');
-    //    return color + ' / ' + val;
-    // }
-
-    // function updateSeatsResult(val, seatsInput) {
-    //     var values = seatsInput.val();
-    //     valuesArr = (values.length > 0) ? values.split(';') : [];
-    //     var indexVal = $.inArray(val, valuesArr);
-    //     if (indexVal === -1) {
-    //         valuesArr.push(val);
-    //     } else {
-    //         valuesArr.splice(indexVal, 1);
-    //     }
-    //     seatsInput.val(valuesArr.join(';'));
-    // }
 
 </script>

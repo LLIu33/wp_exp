@@ -1,3 +1,8 @@
+div.container-fluid {
+    margin-bottom: 30px;
+    padding-left: 34px;
+}
+
 .node text {
     font: 12px sans-serif;
 }
@@ -7,7 +12,7 @@ rect.selection {
     stroke-opacity  : 0.5;
     fill            : transparent;
 }
-g.point rect, g.tag rect {
+g.point rect, g.tag, g.label rect {
     stroke  : black;
     cursor  : pointer;
 }
@@ -78,23 +83,23 @@ svg {
     display: none;
 }
 
-div.radio {
+/*div.radio {
     display: inline-block;
     margin-bottom: 0;
     margin-top: 0;
-}
+}*/
 
 #price_type_app_btn {
     cursor: pointer;
 }
 
-div.radio_circle svg {
+/*div.radio_circle svg {
     margin-left: 10px;
 }
 
 .alert.alert-info.item_examples {
     padding-bottom: 5px;
-}
+}*/
 
 .color_box {
     width: 15px;
@@ -120,4 +125,25 @@ div.radio_circle svg {
 
 .color_examples table {
     width: 100%;
+}
+
+.shape_type_conteiner {
+    width: 130px;
+    margin-bottom: 20px;
+}
+
+.edit-row-modal-sm .form-group,
+.edit-row-modal-sm .form-group input,
+.edit-row-modal-sm .form-group select,
+.edit-seat-modal-sm .form-group,
+.edit-seat-modal-sm .form-group input,
+.edit-seat-modal-sm .form-group select{
+    width: 100% !important;
+}
+
+.edit-seat-modal-sm .form-group {
+    padding: 5px 10px;
+}
+.edit_category {
+    display: none;
 }

@@ -353,20 +353,15 @@ class Tribe__Tickets__Main__Extend {
         wp_enqueue_script( 'bootstrap.min.js', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/js/bootstrap.min.js' );
         wp_enqueue_script( 'd3.min.js', plugin_dir_url( __FILE__ ) . '/vendor/d3/d3.min.js');
         wp_enqueue_script( 'd3-transform.js', plugin_dir_url( __FILE__ ) . '/vendor/d3-transform/src/d3-transform.js' );
-        wp_enqueue_script( 'jquery-ui.min.js', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/jquery-ui.min.js' );
-        wp_enqueue_script( 'client_map_app', plugin_dir_url( __FILE__ ) . '/js/clientApp.js', array('jquery') );
+        wp_enqueue_script( 'client_map_app', plugin_dir_url( __FILE__ ) . '/js/clientApp.js', array('jquery'));
 
         wp_register_style( 'bootstrap_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap.min.css', false, '1.0.0' );
         wp_register_style( 'bootstrap_theme_min_css', plugin_dir_url( __FILE__ ) . '/vendor/bootstrap/dist/css/bootstrap-theme.min.css', false, '1.0.0' );
         wp_register_style( 'custom_wp_admin_css', plugin_dir_url( __FILE__ ) . '/css/main.css', false, '1.0.0' );
-        wp_register_style( 'jquery_ui_min_css', plugin_dir_url( __FILE__ ) . '/vendor/jquery-ui/themes/ui-lightness/jquery-ui.css', false, '1.0.0' );
-        wp_register_style( 'font_awesome_min_css', 'https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css', false, '4.5.0' );
 
         wp_enqueue_style( 'bootstrap_min_css' );
         wp_enqueue_style( 'bootstrap_theme_min_css' );
-        wp_enqueue_style( 'jquery_ui_min_css' );
         wp_enqueue_style( 'custom_wp_admin_css' );
-        wp_enqueue_style( 'font_awesome_min_css' );
     }
 
     public function displayEventMapDropdown() {
