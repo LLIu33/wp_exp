@@ -43,7 +43,7 @@
 
     jQuery( document ).ready(function($) {
         var mapWrapper = $('.map_wrapper');
-        $('.tribe-events-meta-group-gmap').after(mapWrapper);
+        $('.tribe-events-event-meta').append(mapWrapper);
 
         var seatsInput = $('#tribe-tickets-seats');
 
