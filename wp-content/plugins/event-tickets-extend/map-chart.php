@@ -8,7 +8,11 @@
     }
 
     #graph {
-        height: 960px;
+        height: 460px;
+    }
+
+    .cart .tribe-tickets-meta-row {
+        display: table-row;
     }
 </style>
 <div class="map_wrapper">
@@ -30,7 +34,7 @@
         dataProvider: 'serverData',
         margin: { top: 100, right: 120, bottom: 100, left: 120 },
         width: '100%',
-        height: '960',
+        height: '460',
         duration: '1000',
         graphContainer: '.graph_container',
         dataContainer: '#graphData',
@@ -43,16 +47,46 @@
 
     jQuery( document ).ready(function($) {
         var mapWrapper = $('.map_wrapper');
-        $('.tribe-events-event-meta').append(mapWrapper);
-
         var seatsInput = $('#tribe-tickets-seats');
+        var mainForm = $("form.cart");
+        var metaEl = $('.tribe-events-event-meta');
 
-        $('form.cart .tribe-events-tickets').before(seatsInput);
+        var ticketsEl = mainForm.find('.tribe-events-tickets');
 
-        $('g.point').click(function(){
+        metaEl.append(mapWrapper);
+        ticketsEl.before(seatsInput);
+
+        var ticketsElLIst = ticketsEl.find('.tickets_name');
+        ticketsList = _.map(ticketsElLIst, function() {
+            return jQuery(this).text();
+        });
+
+        // $('g.point').click(function(){
+        //     var result = Client.getSelectedSeats();
+        //     seatsInput.val(JSON.stringify(result));
+        // });
+
+        mainForm.submit(function(e){
+            e.preventDefault();
             var result = Client.getSelectedSeats();
             seatsInput.val(JSON.stringify(result));
+
+            //add quantity
+            var resultFormatted = _.map(result, function(item) {
+                return {
+                    seat: item.name,
+                    row: item.tag,
+                    price: item.category.name,
+                    category: item.category.name,
+                    color: item.category.color
+                };
+            });
+
+            _.each();
+            _.where(resultFormatted, {author: "Shakespeare", year: 1611});
+            // mainForm.submit();
         });
     });
+
 
 </script>

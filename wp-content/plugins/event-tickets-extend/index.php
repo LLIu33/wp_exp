@@ -405,12 +405,12 @@ class Tribe__Tickets__Main__Extend {
     }
 
     public function add_custom_field_to_attendees( $post_id, $post ) {
-        $seatsStr = empty( $_POST['attendee']['seats'] ) ? null :  $_POST['attendee']['seats'];
-        $seatsArr = array_filter(explode(";", $seatsStr));
+        $seatsArr = empty( $_POST['attendee']['seats'] ) ? null :  json_decode($_POST['attendee']['seats'], true);
+
         if(!empty($seatsArr)) {
             update_post_meta( $post_id, 'seats', $seatsArr[0]);
             $seatsArr = (array)array_slice($seatsArr, 1);
-            $_POST['attendee']['seats'] = implode(";", $seatsArr);
+            $_POST['attendee']['seats'] = json_encode($seatsArr);
         }
     }
 
