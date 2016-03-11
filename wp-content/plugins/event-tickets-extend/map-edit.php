@@ -31,7 +31,7 @@
     </div>
 </div>
 <input type="hidden" id="graphData" name="graphData" />
-<input type="hidden" id="getData" name="getData"  value='<?php echo $post->post_content ?>'/>
+<input type="hidden" id="getData" name="getData" value='<?php echo $post->post_content ?>'/>
 
 <div class="modal fade add-category-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel">
     <div class="modal-dialog modal-sm">
@@ -43,12 +43,6 @@
                         <div class="input-group">
                             <div class="input-group-addon" id="name_type_app_btn">N</div>
                             <input class="form-control" type="text" id="category_name" placeholder="Name" />
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <div class="input-group">
-                            <div class="input-group-addon" id="shape_type_app_btn">S</div>
-                            <input class="form-control" type="text" id="category_shape" placeholder="Shape type" />
                         </div>
                     </div>
                     <div class="form-group">
@@ -172,24 +166,6 @@
     </div>
     <button type="button" id="color_change_triggered" class="btn btn-primary">Ok</button>
     <button type="button" id="color_picker_cancel" class="btn btn-default">Cancel</button>
-</div>
-<div class="hidden" id="popover-shape-type">
-    <div class="shape_type_conteiner">
-        <div class="radio radio_rect">
-            <label>
-                <input type="radio" name="itemType" id="rect" value="rect" checked>
-                Rectangle
-            </label>
-        </div>
-        <div class="radio radio_circle">
-            <label>
-                <input type="radio" name="itemType" id="circle" value="circle">
-                Circle
-            </label>
-        </div>
-    </div>
-    <button type="button" id="shape_change_triggered" class="btn btn-primary">Ok</button>
-    <button type="button" id="shape_cancel" class="btn btn-default">Cancel</button>
 </div>
 
 <script type="text/html" id="color_picker_item">

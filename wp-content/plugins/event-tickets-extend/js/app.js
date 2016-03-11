@@ -33,7 +33,7 @@ App.prototype.draw = function (config) {
     self._createShapes(self.shapes);
     self.saveGraph();
 };*/
-App.prototype.natCreateSeatsLine = function (shapesQty, numOfColumns, startFrom, rotation, radius, categoryName) {
+App.prototype.natCreateSeatsLine = function (shapesQty, numOfColumns, startFrom, rotation, radius, categoryName, shapeType) {
     if(shapesQty < 1) {
         alert('Please enter number of seats');
         return;
@@ -43,12 +43,11 @@ App.prototype.natCreateSeatsLine = function (shapesQty, numOfColumns, startFrom,
     var numOfColumns = numOfColumns || 1;
     var rotation = rotation || 0;
     var startFrom = startFrom || 1;
-    var type = $('input[name=itemType]:checked').val();
+    var type = shapeType.toLowerCase();
     var maxIdShape = _.max(self.shapes, function (shape) {
         return shape.id;
     });
     var maxId = maxIdShape.id + 1;
-
     for (var j = 0; j < numOfColumns; j++) {
         shapes[j] = [];
         var shape;
@@ -60,7 +59,6 @@ App.prototype.natCreateSeatsLine = function (shapesQty, numOfColumns, startFrom,
                 var cat =_.find(self.categories, {name: categoryName});
                 if( ! _.isUndefined(cat)) {
                     shape.color = cat.color;
-                    shape.type = cat.shape || 'rect';
                     shape.r = 20;
                 } else {
                     shape.color = null;
@@ -252,37 +250,9 @@ App.prototype.editSelectedItems = function (config) {
             var category = this._getCategory({ name: config.category });
             d3.selectAll('g.point.selected > .inner').each(function(d) {
                 d.color = self._isHexColorFormat(category.color) ? '#'+category.color : category.color;
-                console.log('category', category);
-                if (d.type != category.shape) {
-                    d.type = category.shape;
-                    //console.log('change to ', d);
-                   // self._shapeType(d3.select(this.parentNode));
-                   /*d3.select(this.parentNode).prepend(function(d) {
-                       return document.createElementNS("http://www.w3.org/2000/svg", d.type);
-                   })
-                       .attr("x", 0)
-                       .attr("y", 0)
-                       .attr("cx", 0)
-                       .attr("cy", 0)
-                       .attr("width", function (d) {
-                           return d.w;
-                       })
-                       .attr("height", function (d) {
-                           return d.h;
-                       })
-                       .attr("r", function (d) {
-                           return d.r || 0;
-                       })
-                       .attr("stroke", "black")
-                       .attr("stroke-width", "2")
-                       .attr("fill",function(d){
-                          return self._getElementColor(d.color);
-                        })
-                       .attr("class", "inner");
-                    d3.select(this).remove();*/
-                }
                 d3.select(this).attr('fill',  d.color);
             });
+            this.saveGraph();
         }
     }
 };
@@ -891,6 +861,7 @@ App.prototype._drawFloor = function () {
 App.prototype._createTools = function () {
     self._createTool('categories');
     self._createTool('rowType');
+    self._createTool('seatType');
     //self._createTool('numberOfSeats');
     self._createTool('groupOfSeats');
     //self._createTool('ff');
@@ -1261,6 +1232,12 @@ App.prototype._toolsConfig = function (name) {
                 self._createRowTypeTool(toolEnter, name);
             }
         },
+        'seatType': {
+            'data': [{ x: 0, y: 0, w: 300, h: 120, name:'SEAT TYPE' }],
+            'createTool': function (toolEnter, name) {
+                self._createSeatTypeTool(toolEnter, name);
+            }
+        },
         'numberOfSeats': {
             'data': [{ x: 0, y: 0, w: 300, h: 200, name:'NUMBER OF SEATS' }],
             'createTool': function (toolEnter, name) {
@@ -1330,6 +1307,12 @@ App.prototype._rowTypesData = function (container) {
     var rowTypes = ['straight', 'curve'];
     return _.map(rowTypes, function (row) {
         return { x: container.x, y: container.y, parentW: container.w, name: row.toUpperCase(), h:30, w: '100%' };
+    })
+};
+App.prototype._seatTypesData = function (container) {
+    var seatTypes = ['rect', 'circle'];
+    return _.map(seatTypes, function (seat) {
+        return { x: container.x, y: container.y, parentW: container.w, name: seat.toUpperCase(), h:30, w: '100%' };
     })
 };
 App.prototype._numberOfSeatsData = function (container) {
@@ -1567,6 +1550,7 @@ App.prototype._createCategoriesToolContainerCategoriesList = function (toolName)
     this.categoryEnter = this.category.enter()
         .append('g')
         .attr("class", "category")
+        .style('cursor', 'pointer')
         .on('click', function (d) {
             var selectRects = d3.selectAll('g.category > .highlight')[0];
             _.each(selectRects, function (rect) {
@@ -1582,19 +1566,16 @@ App.prototype._createCategoriesToolContainerCategoriesList = function (toolName)
             return d.x;
         })
         .attr("y", function (d) {
-            return 75 - smallRectWidth*2 + d.y + 30 * d.id
+            return 68 - smallRectWidth*2 + d.y + 30 * d.id
         })
         .attr("width", '100%')
-        .attr("height", 15)
+        .attr("height", 30)
         .attr("class", 'highlight')
         .style("fill-opacity", 0.2)
-        .style('fill', 'white')
-        .style('cursor', 'pointer');
+        .style('fill', 'white');
 
     this.categoryEnter
-        .append(function (d) {
-            return document.createElementNS("http://www.w3.org/2000/svg", d.type);
-        })
+        .append('rect')
         .attr("x", function (d) {
             return d.x + d.parentW/2 - 35;
         })
@@ -1668,7 +1649,6 @@ App.prototype._createCategoriesToolContainerCategoriesList = function (toolName)
         .attr("text-anchor", "middle")
         .attr('font-family', 'FontAwesome')
         .attr('font-size',  '1.3em')
-        .style('cursor', 'pointer')
         .text(function(d) { return '\uf040 ' })
         .on('click', function (d) {
             jQuery('#category_name').val(d.name);
@@ -1680,8 +1660,10 @@ App.prototype._createCategoriesToolContainerCategoriesList = function (toolName)
             jQuery('.edit_category').show();
 
             var cat = _.where(self.categories, {name: d.name});
-            var cat_index = self.categories.indexOf(cat);
-            self.categories.splice(cat_index, 1);
+            var cat_index = self.categories.indexOf(cat[0]);
+            if (cat_index != -1) {
+                self.categories.splice(cat_index, 1);
+            }
 
             jQuery('.add-category-modal-sm').modal('show');
         });
@@ -1696,7 +1678,6 @@ App.prototype._createCategoriesToolContainerCategoriesList = function (toolName)
         .attr("text-anchor", "middle")
         .attr('font-family', 'FontAwesome')
         .attr('font-size',  '1.3em')
-        .style('cursor', 'pointer')
         .text(function(d) { return '\uf1f8  ' })
         .on('click', function (d) {
             var cat = _.where(self.categories, {name: d.name});
@@ -1818,6 +1799,106 @@ App.prototype._createRowTypeToolContents = function (toolName) {
         .remove();
 };
 
+App.prototype._createSeatTypeTool = function (element, toolName) {
+    this._createSeatTypeToolContainer(element);
+    this._createSeatTypeToolContents(toolName);
+};
+App.prototype._createSeatTypeToolContainer = function (element) {
+    element
+        .append("rect")
+        .attr("x", function (d) {
+            return d.x;
+        })
+        .attr("y", function (d) {
+            return d.y;
+        })
+        .attr("width", function (d) {
+            return d.w;
+        })
+        .attr("height", function (d) {
+            return d.h;
+        })
+        .attr("fill", 'white')
+        .attr("stroke", "gray");
+
+    element
+        .append("text")
+        .attr("x", function (d) {
+            return d.x + d.w/2;
+        })
+        .attr("y", function (d) {
+            return d.y + 30;
+        })
+        .attr("text-anchor", "middle")
+        .text(function(d){
+            return d.name;
+        })
+        .style("font-size", "22px")
+        .style("fill-opacity", 1);
+};
+App.prototype._createSeatTypeToolContents = function (toolName) {
+    var i = 0;
+    var stepY = 40;
+    var containerData = this._toolsConfig(toolName).data[0];
+    var data = this._seatTypesData(containerData);
+
+    this.category = this.tool.selectAll("g.seattypes").data(data, function(d) {
+        return d.id || (d.id = ++i);
+    });
+
+    this.categoryEnter = this.category.enter()
+        .append('g')
+        .attr("class", "seattypes")
+        .style('cursor', 'pointer')
+        .on('click', function (d) {
+            var selectRects = d3.selectAll('g.seattypes > rect')[0];
+            _.each(selectRects, function (rect, key) {
+                if(key+1 == d.id) {
+                    d3.select(rect).style('fill', 'blue');
+                    self.selectedSeatType = d.name;
+                } else {
+                    d3.select(rect).style('fill', 'none');
+                }
+            })
+        });
+
+    this.categoryEnter.append("rect")
+        .attr("x", function (d) {
+            return d.x;
+        })
+        .attr("y", function (d) {
+            return stepY * d.id;
+        })
+        .attr("width", function (d) {
+            return d.w;
+        })
+        .attr("height", function (d) {
+            return d.h;
+        })
+        .style("fill-opacity", 0.2)
+        .style('fill', 'none');
+
+    this.categoryEnter.append("text")
+        .attr("x", function (d) {
+            return d.x + d.parentW/2;
+        })
+        .attr("y", function (d) {
+            return d.id * stepY + stepY/2;
+        })
+        .attr("text-anchor", "middle")
+        .text(function (d) {
+            return d.name;
+        })
+        .style("font-size", "16px")
+        .style("fill-opacity", 1)
+        .style('fill', 'grey');
+
+    this.toolExit = this.tool.exit()
+        .remove();
+    this.toolExit.select("text")
+        .remove();
+};
+
 App.prototype._createNumberOfSeatsTool = function (element, toolName) {
     this._createNumberOfSeatsToolContainer(element);
     this._createNumberOfSeatsToolContents(toolName);
@@ -1877,6 +1958,10 @@ App.prototype._createNumberOfSeatsToolContainer = function (element) {
             }
             if( ! self.selectedRowType) {
                 alert('Please select row type');
+                return;
+            }
+            if( ! self.selectedSeatType) {
+                alert('Please select seat type');
                 return;
             }
 
@@ -2128,6 +2213,10 @@ App.prototype._createGroupOfSeatsToolContainer = function (element) {
                 alert('Please select row type');
                 return;
             }
+            if( ! self.selectedSeatType) {
+                alert('Please select seat type');
+                return;
+            }
             self._generateRow(shapesQty, firstSeat, rowsQty);
         })
 };
@@ -2327,7 +2416,7 @@ App.prototype.createDummyShape = function (type, shapesLength) {
         number: Math.floor((Math.random() * 500) + 251),
         type: type
     };
-return { x: shape.w * shapesLength, y: 0, w: shape.w, h: shape.h, color: shape.color, number: shape.number, type: shape.type };
+return { x: shape.w * shapesLength, y: 0, w: shape.w, h: shape.h, color: shape.color, number: shape.number, type: type };
 };
 App.prototype.selectAllShapes = function () {
     var shapes = [];
@@ -2476,12 +2565,12 @@ App.prototype.isGroupEditAllowed = function () {
 App.prototype._generateRow = function (shapesQty, firstSeat, rowsQty) {
     var rows = rowsQty || 1;
     var rowTypesLogic = {
-        'straight': function (shapesQty, rowsQty, firstSeat, category) {
-            self.natCreateSeatsLine(shapesQty, rowsQty, firstSeat, 0, 0, category);
+        'straight': function (shapesQty, rowsQty, firstSeat, category, shapeType) {
+            self.natCreateSeatsLine(shapesQty, rowsQty, firstSeat, 0, 0, category, shapeType);
         },
         'curve': function () {
             alert('Curve row types are currently off');
         }
     };
-    rowTypesLogic[self.selectedRowType.toLowerCase()](shapesQty, rows, firstSeat, self.selectedCategory.name);
+    rowTypesLogic[self.selectedRowType.toLowerCase()](shapesQty, rows, firstSeat, self.selectedCategory.name, self.selectedSeatType);
 };
