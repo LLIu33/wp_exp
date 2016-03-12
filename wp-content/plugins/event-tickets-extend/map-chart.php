@@ -56,10 +56,12 @@
         metaEl.append(mapWrapper);
         ticketsEl.before(seatsInput);
 
-        var ticketsElLIst = ticketsEl.find('.tickets_name');
-        ticketsList = _.map(ticketsElLIst, function() {
-            return jQuery(this).text();
-        });
+        var ticketRows =  $('.tribe-events-tickets tr').has('.tickets_name');
+        var ticketsElLIst = ticketRows.find('.tickets_name');
+        // var ticketsList = _.map(ticketsElLIst, function(el) {
+        //     return jQuery(el).text().trim();
+        // });
+
 
         // $('g.point').click(function(){
         //     var result = Client.getSelectedSeats();
@@ -82,8 +84,13 @@
                 };
             });
 
-            _.each();
-            _.where(resultFormatted, {author: "Shakespeare", year: 1611});
+            _.each(ticketRows, function(ticketRow) {
+                var categoryName = $(ticketRow).find('.tickets_name').text().trim();
+                var itemByCategory = _.where(resultFormatted, {category: categoryName});
+                
+
+            });
+            
             // mainForm.submit();
         });
     });
