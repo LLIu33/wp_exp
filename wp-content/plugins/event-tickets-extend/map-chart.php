@@ -56,20 +56,11 @@
         metaEl.append(mapWrapper);
         ticketsEl.before(seatsInput);
 
-        var ticketRows =  $('.tribe-events-tickets tr').has('.tickets_name');
+        var ticketRows =  $('.tribe-events-tickets tr').has('.tickets_name').hide();
         var ticketsElLIst = ticketRows.find('.tickets_name');
-        // var ticketsList = _.map(ticketsElLIst, function(el) {
-        //     return jQuery(el).text().trim();
-        // });
-
-
-        // $('g.point').click(function(){
-        //     var result = Client.getSelectedSeats();
-        //     seatsInput.val(JSON.stringify(result));
-        // });
 
         mainForm.submit(function(e){
-            e.preventDefault();
+            // e.preventDefault();
             var result = Client.getSelectedSeats();
             seatsInput.val(JSON.stringify(result));
 
@@ -85,15 +76,14 @@
             });
 
             _.each(ticketRows, function(ticketRow) {
-                var categoryName = $(ticketRow).find('.tickets_name').text().trim();
+                var categoryEl = $(ticketRow).find('.tickets_name');
+                var categoryName = categoryEl.text().trim();
                 var itemByCategory = _.where(resultFormatted, {category: categoryName});
-                
-
+                //set quantity for every selected and available tickets
+                categoryEl.parent().find('.tribe-ticket-quantity').val(itemByCategory.length);
             });
             
             // mainForm.submit();
         });
     });
-
-
 </script>
