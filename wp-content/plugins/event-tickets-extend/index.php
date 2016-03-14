@@ -222,15 +222,26 @@ class Tribe__Tickets__Main__Extend {
                 )
         );
 
-        function getSeatsInfo($val) {
-            $seatsInfo = get_post_meta ( $val->ID, 'seats', true);
-            return array($val->ID, $seatsInfo);
+        function getBougtTickets($val) {
+            $seatString = get_post_meta ( $val->ID, 'seats', true);
+            if (empty($seatString)) {
+                return;
+            }
+            $seatArr = explode(" / ", $seatString);
+            $result = new stdClass();
+            $result->name = $seatArr[0];
+            $result->tag = $seatArr[1];
+            return $result;
         }
-
-        $seatsAttendeeMap = array_map("getSeatsInfo", $attendees);
+        $bougtTickets = array_map("getBougtTickets", $attendees);
+        $bougtTickets = array_filter($bougtTickets);
 
         $map_id = get_post_meta($event_id, '_map_id', true);
         $map_info = get_post($map_id);
+
+        $mapData = json_decode($map_info->post_content);
+        $mapData->bougtTickets = $bougtTickets;
+        $map_info->post_content = json_encode($mapData);
 
         include self::instance()->plugin_path . 'map-chart.php';
     }
