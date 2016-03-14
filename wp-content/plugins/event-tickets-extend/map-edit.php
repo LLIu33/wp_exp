@@ -168,16 +168,16 @@
     <button type="button" id="color_picker_cancel" class="btn btn-default">Cancel</button>
 </div>
 
-<script type="text/html" id="color_picker_item">
-    <td>
-        <div class="form-group">
-            <label>
-                <input type="radio" name="color_picker" value="<%= color %>"/>
-                <div class="color_box" style="background-color: <%= color %>"></div>
-            </label>
-        </div>
-    </td>
-</script>
+    <script type="text/html" id="color_picker_item">
+        <td>
+            <div class="form-group">
+                <label>
+                    <input type="radio" name="color_picker" value="<%= color %>"/>
+                    <div class="color_box" style="background-color: <%= color %>"></div>
+                </label>
+            </div>
+        </td>
+    </script>
 <script>
     var config = {
         dataProvider: 'serverData',
@@ -213,18 +213,9 @@
         },
         'trigger': 'click'
     };
-    var shapeOptions = {
-        'html': true,
-        'title': 'Select shape type',
-        'content': function () {
-            return jQuery('#popover-shape-type').html();
-        },
-        'trigger': 'click'
-    };
 
     jQuery('#price_type_app_btn').popover(popoverOptions);
     jQuery('#category_color').popover(colorPickerOptions);
-    jQuery('#category_shape').popover(shapeOptions);
 
     jQuery(document).on('click', '#edit-row-finish', function() {
         var name = jQuery('#edit-row-row-name'),
@@ -247,7 +238,7 @@
     });
 
     jQuery(document).on('click', '#edit-group-finish', function() {
-            var rotate = jQuery('#edit-group-rotate'),
+        var rotate = jQuery('#edit-group-rotate'),
             category = jQuery("#edit-group-category option:selected"),
             startFrom = jQuery('#edit-group-start-from');
         var groups = jQuery('#edit-group-groups-list');
@@ -291,7 +282,6 @@
     jQuery(document).on('click', '#create_category_app_btn', function () {
         var category = {
             name: jQuery('#category_name').val(),
-            shape: jQuery('#category_shape').val(),
             color: jQuery('#category_color').val(),
             price: jQuery('#category_price').val()
         };
@@ -316,17 +306,9 @@
         jQuery('#category_color').val(color);
         jQuery('#category_color').popover('hide');
     });
-    jQuery(document).on('click', '#shape_change_triggered', function (e) {
-        var shape_type = jQuery('input[name=itemType]:checked').val();
-        jQuery('#category_shape').val(shape_type);
-        jQuery('#category_shape').popover('hide');
-    });
 
     jQuery(document).on('click', '#color_picker_cancel', function (e) {
         jQuery('#category_color').popover('hide');
-    });
-    jQuery(document).on('click', '#shape_cancel', function (e) {
-        jQuery('#category_shape').popover('hide');
     });
 
     jQuery(document).ready(function () {

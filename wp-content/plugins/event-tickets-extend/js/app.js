@@ -131,7 +131,24 @@ App.prototype.makeAnArc = function (shapes, r) {
     return shapes;
 };
 App.prototype.calculateCoords = function (rowNumber, currentShape) {
-    return { x: 20, y: 20 + currentShape.h * rowNumber };
+    var max_y = 20;
+    d3.selectAll('g.group').each(function (d) {
+        var coords = d3.transform(d3.select(this).attr("transform"));
+        var grpX = coords.translate[0];
+        var grpY = coords.translate[1];
+        if (grpY > max_y) {
+            max_y = grpY;
+        }
+    });
+    var y;
+    if (rowNumber == 0 ) {
+        y = max_y + currentShape.h + 20;
+        y = currentShape.type == 'rect' ? y : y + 20;
+    } else {
+        y = max_y + currentShape.h;
+    }
+    var x = currentShape.type == 'rect' ? 20 : 40;
+    return { x: x, y: y};
 };
 App.prototype.calculateTagCoords = function (rowNumber, currentShape) {
     if ( currentShape.type == 'rect') {
@@ -373,11 +390,11 @@ App.prototype.draggable = function () {
         .on("drag", function(d,i) {
             var targetName = this.parentNode;
             var selection = d3.selectAll('.selected');
-            if( selection[0].indexOf(this) == -1) {
+  /*          if( selection[0].indexOf(this) == -1) {
                 selection.classed("selected", false);
                 selection = d3.select(this);
                 selection.classed("selected", true);
-            }
+            }*/
             selection.attr("transform", function( d, i) {
                 if( ! _.isUndefined(d)) {
                     d.x += d3.event.dx;
@@ -466,7 +483,6 @@ App.prototype._init = function () {
     d3.select("body")
         .on("keydown", function() {
             if(d3.event.keyCode === 46) {
-                console.log();
                 d3.selectAll('.selected').each(function (d) {
                     if( ! d3.select(this).classed('tag')) {
                         d3.select(this).remove();
