@@ -99,7 +99,7 @@ class Tribe__Tickets__Main__Extend {
 
         add_action( 'admin_enqueue_scripts', array( $this, 'prepeare_admin_pages') );
         add_action( 'wp_insert_post', array( $this, 'prepeare_insert_post' ), 10, 3 );
-        add_action( 'added_post_meta', array( $this, 'wpse16835_after_post_meta' ), 10, 4 );
+        add_action( 'added_post_meta', array( $this, 'add_custom_field_to_attendees' ), 10, 4 );
 
         add_action( 'tribe_after_location_details', array( $this, 'displayEventMapDropdown' ) );
         add_action( 'tribe_events_single_meta_venue_section_end', array( $this,'show_wp_map_chart'));
@@ -391,18 +391,12 @@ class Tribe__Tickets__Main__Extend {
         return false;
     }
 
-    function wpse16835_after_post_meta( $meta_id, $post_id, $meta_key, $meta_value ) {
-        if ($meta_key == '_tribe_rsvp_product') {
-            var_dump( $meta_id, $post_id, $meta_key, $meta_value );die;
-        }
-    }
-
     public function prepeare_insert_post($post_id, $post, $update) {
         // post_type
         switch ($post->post_type) {
-            case 'tribe_rsvp_attendees':
-                $this->add_custom_field_to_attendees($post_id, $post);
-                break;
+            // case 'tribe_rsvp_attendees':
+            //     $this->add_custom_field_to_attendees($post_id, $post);
+            //     break;
             case 'tribe_events':
                 $this->add_custom_field_to_events($post_id, $post);
                 break;
@@ -412,76 +406,26 @@ class Tribe__Tickets__Main__Extend {
         }
     }
 
-    public function add_custom_field_to_attendees( $post_id, $post ) {
-        $product_list = array_map('get_post', (array) $_POST['product_id']);
+    public function add_custom_field_to_attendees( $meta_id, $post_id, $meta_key, $meta_value ) {
+        if ($meta_key != '_tribe_rsvp_product') {
+            return;
+        }
+        
+        $product = get_post($meta_value);
+
+        // $product_list = array_map('get_post', (array) $_POST['product_id']);
         $_POST['attendee']['seats'] = preg_replace('/\\\"/',"\"", $_POST['attendee']['seats']);
         $seatsArr = empty( $_POST['attendee']['seats'] ) ? null :  json_decode($_POST['attendee']['seats'], true);
 
-        // var_dump($post);
-        // var_dump($seatsArr[0]);die;
-        if(!empty($seatsArr)) {
-            $first_seat = $seatsArr[0];
-            foreach ( $product_list as $product ) {
-                if ($product->post_title == $first_seat['category']['name']) {
-                    $seatStr = $first_seat['name'] . " / " . $first_seat['tag'];
-                    update_post_meta( $post_id, 'seats', $seatStr);
-                    $seatsArr = (array)array_slice($seatsArr, 1);
-                    $_POST['attendee']['seats'] = json_encode($seatsArr);
-                }
+        foreach ( $seatsArr as $key => $seat ) {
+            if ($product->post_title == $seat['category']['name']) {
+                $seatStr = $seat['name'] . " / " . $seat['tag'];
+                update_post_meta( $post_id, 'seats', $seatStr);
+                unset($seatsArr[$key]);
+                $_POST['attendee']['seats'] = json_encode($seatsArr);
+                return;
             }
         }
-
-        // foreach ( (array) $_POST['product_id'] as $product_id ) {
-
-        //     // Get the event this tickets is for
-        //     $event_id = get_post_meta( $product_id, $this->event_key, true );
-
-        //     if ( empty( $event_id ) ) {
-        //         continue;
-        //     }
-
-        //     $ticket = $this->get_ticket( $event_id, $product_id );
-
-        //     // if there were no RSVP tickets for the product added to the cart, continue
-        //     if ( empty( $_POST[ "quantity_{$product_id}" ] ) ) {
-        //         continue;
-        //     }
-
-        //     $qty = max( intval( $_POST[ "quantity_{$product_id}" ] ), 0 );
-
-        //     // Throw an error if Qty is bigger then Remaining
-        //     if ( $ticket->managing_stock() && $qty > $ticket->remaining() ) {
-        //         $url = add_query_arg( 'rsvp_error', 2, get_permalink( $event_id ) );
-        //         wp_redirect( esc_url_raw( $url ) );
-        //         die;
-        //     }
-
-        //     $has_tickets = true;
-
-        //     // Iterate over all the amount of tickets purchased (for this product)
-        //     for ( $i = 0; $i < $qty; $i ++ ) {
-
-        //         $attendee = array(
-        //             'post_status' => 'publish',
-        //             'post_title'  => $attendee_full_name . ' | ' . ( $i + 1 ),
-        //             'post_type'   => self::ATTENDEE_OBJECT,
-        //             'ping_status' => 'closed',
-        //         );
-
-        //         // Insert individual ticket purchased
-        //         $attendee_id = wp_insert_post( $attendee );
-
-        //         $sales = (int) get_post_meta( $product_id, 'total_sales', true );
-        //         update_post_meta( $product_id, 'total_sales', ++ $sales );
-
-        //         update_post_meta( $attendee_id, self::ATTENDEE_PRODUCT_KEY, $product_id );
-        //         update_post_meta( $attendee_id, self::ATTENDEE_EVENT_KEY, $event_id );
-        //         update_post_meta( $attendee_id, $this->security_code, $this->generate_security_code( $attendee_id ) );
-        //         update_post_meta( $attendee_id, $this->order_key, $order_id );
-        //         update_post_meta( $attendee_id, $this->full_name, $attendee_full_name );
-        //         update_post_meta( $attendee_id, $this->email, $attendee_email );
-        //     }
-        // }
     }
 
     public function add_custom_field_to_events( $post_id, $post) {
